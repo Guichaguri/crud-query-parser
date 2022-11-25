@@ -1,3 +1,4 @@
+import { Brackets, ObjectLiteral, SelectQueryBuilder, WhereExpressionBuilder } from 'typeorm';
 import { QueryBuilderContract } from '../contracts/query-builder.contract';
 import {
   ParsedRequest, ParsedRequestOrder,
@@ -9,7 +10,6 @@ import {
   ParsedRequestWhereField,
   ParsedRequestWhereOperator
 } from '../models/parsed-request-where';
-import { Brackets, ObjectLiteral, SelectQueryBuilder, WhereExpressionBuilder } from 'typeorm';
 import { ensureArray, ensureFalsy } from '../utils/functions';
 import { GetManyProxy } from '../models/get-many.proxy';
 
@@ -31,9 +31,19 @@ export class TypeormQueryBuilder implements QueryBuilderContract<SelectQueryBuil
   /**
    * @inheritDoc
    */
-  public async run<E>(qb: SelectQueryBuilder<E | any>, request: ParsedRequest): Promise<GetManyProxy<E>> {
+  public async getOne<E>(qb: SelectQueryBuilder<E | any>, request: ParsedRequest): Promise<E | null> {
+    const query = this.createBaseQuery(qb, request);
+    const entity = await query.getOne();
+
+    return entity ?? null;
+  }
+
+  /**
+   * @inheritDoc
+   */
+  public async getMany<E>(qb: SelectQueryBuilder<E | any>, request: ParsedRequest): Promise<GetManyProxy<E>> {
     const fullQuery = this.createBaseQuery(qb, request);
-    const paginatedQuery = this.paginateQuery(qb.clone(), request);
+    const paginatedQuery = this.paginateQuery(fullQuery.clone(), request);
 
     const data = await paginatedQuery.getMany();
     const total = await fullQuery.getCount();
@@ -84,13 +94,19 @@ export class TypeormQueryBuilder implements QueryBuilderContract<SelectQueryBuil
   /**
    * Adapts a select
    *
-   * @param qb
-   * @param select
+   * @param qb The query builder
+   * @param select The parsed select fields
    */
   protected adaptSelect<E>(qb: SelectQueryBuilder<E>, select: ParsedRequestSelect): void {
     qb.addSelect(select.map(s => s.field.join('.')));
   }
 
+  /**
+   * Adapts the join relation list
+   *
+   * @param qb The query builder
+   * @param relations The parsed relation list
+   */
   protected adaptRelations<E>(qb: SelectQueryBuilder<E>, relations: ParsedRequestRelation[]): void {
     for (const relation of relations) {
       const path = relation.field.join('.');
@@ -100,6 +116,12 @@ export class TypeormQueryBuilder implements QueryBuilderContract<SelectQueryBuil
     }
   }
 
+  /**
+   * Adapts the order by list
+   *
+   * @param qb The query builder
+   * @param ordering The parsed ordering
+   */
   protected adaptOrder<E>(qb: SelectQueryBuilder<E>, ordering: ParsedRequestOrder[]): void {
     for (const order of ordering) {
       const path = order.field.join('.');
@@ -108,6 +130,14 @@ export class TypeormQueryBuilder implements QueryBuilderContract<SelectQueryBuil
     }
   }
 
+  /**
+   * Adapts a where condition
+   *
+   * @param qb The query builder
+   * @param where The quere condition
+   * @param or Whether this where condition is AND/OR
+   * @param params The registered parameter name list
+   */
   protected adaptWhere(qb: WhereExpressionBuilder, where: ParsedRequestWhere, or: boolean, params: string[]): void {
     const addWhere = (or ? qb.orWhere : qb.andWhere).bind(qb);
 
@@ -148,6 +178,12 @@ export class TypeormQueryBuilder implements QueryBuilderContract<SelectQueryBuil
     return param;
   }
 
+  /**
+   * Maps where operators to a pseudo-SQL statement and a parameter map
+   *
+   * @param where The where condition
+   * @param param The parameter name
+   */
   protected mapWhereOperators(where: ParsedRequestWhereField, param: string): { where: string, params: ObjectLiteral } {
     const field = where.field.join('.');
     const operator = where.operator;
@@ -199,7 +235,7 @@ export class TypeormQueryBuilder implements QueryBuilderContract<SelectQueryBuil
 
         return {
           where: `${field} BETWEEN :${param}_start AND :${param}_end`,
-          params: { [`${param}_start`]: value[0], [`${param}_start`]: value[1] },
+          params: { [`${param}_start`]: value[0], [`${param}_end`]: value[1] },
         };
 
       case ParsedRequestWhereOperator.IS_NULL:

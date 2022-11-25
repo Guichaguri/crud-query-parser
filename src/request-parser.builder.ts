@@ -30,7 +30,7 @@ export class RequestParserBuilder<T = any> {
   public setQueryBuilder<E>(queryBuilder: QueryBuilderContract<E>): RequestParserBuilder<E> {
     this.queryBuilder = queryBuilder as QueryBuilderContract<any>;
 
-    return this as RequestParserBuilder<any>;
+    return this as RequestParserBuilder;
   }
 
   public build(): RequestParser<T> {

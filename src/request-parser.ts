@@ -23,7 +23,7 @@ export class RequestParser<T> {
       parsedRequest = filterContract.filter(parsedRequest, filter);
     }
 
-    return await this.queryBuilder.run(baseQuery, parsedRequest);
+    return await this.queryBuilder.getMany(baseQuery, parsedRequest);
   }
 
 }

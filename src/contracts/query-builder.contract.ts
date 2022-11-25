@@ -1,6 +1,11 @@
 import { ParsedRequest } from '../models/parsed-request';
 import { GetManyProxy } from '../models/get-many.proxy';
 
+/**
+ * Represents a class that can build queries based on parsed requests
+ *
+ * @param T The database adapter query builder object
+ */
 export interface QueryBuilderContract<T> {
 
   /**
@@ -12,11 +17,19 @@ export interface QueryBuilderContract<T> {
   build<E>(baseQuery: T, request: ParsedRequest): T;
 
   /**
-   * Runs a parsed request object
+   * Fetches one entity based on a parsed request object
    *
    * @param baseQuery The base query to start of
    * @param request The parsed request object
    */
-  run<E>(baseQuery: T, request: ParsedRequest): Promise<GetManyProxy<E>>;
+  getOne<E>(baseQuery: T, request: ParsedRequest): Promise<E | null>;
+
+  /**
+   * Fetches a paginated list of entities based on a parsed request object
+   *
+   * @param baseQuery The base query to start of
+   * @param request The parsed request object
+   */
+  getMany<E>(baseQuery: T, request: ParsedRequest): Promise<GetManyProxy<E>>;
 
 }
