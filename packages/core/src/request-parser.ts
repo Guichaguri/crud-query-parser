@@ -14,7 +14,19 @@ export class RequestParser<T> {
   ) {
   }
 
+  public async getOne(baseQuery: T, params: Record<string, RequestParamValue>, filter: RequestFilter = {}): Promise<T | null> {
+    return await this.queryBuilder.getOne(baseQuery, this.parseRequest(baseQuery, filter));
+  }
+
   public async getMany<E>(baseQuery: T, params: Record<string, RequestParamValue>, filter: RequestFilter = {}): Promise<GetManyProxy<E>> {
+    return await this.queryBuilder.getMany(baseQuery, this.parseRequest(baseQuery, filter));
+  }
+
+  public build<E>(baseQuery: T, params: Record<string, RequestParamValue>, filter: RequestFilter = {}): T {
+    return this.queryBuilder.build(baseQuery, this.parseRequest(baseQuery, filter));
+  }
+
+  protected parseRequest(params: Record<string, RequestParamValue>, filter: RequestFilter = {}): ParsedRequest {
     let parsedRequest: ParsedRequest;
 
     parsedRequest = this.parser.parse(params);
@@ -23,7 +35,7 @@ export class RequestParser<T> {
       parsedRequest = filterContract.filter(parsedRequest, filter);
     }
 
-    return await this.queryBuilder.getMany(baseQuery, parsedRequest);
+    return parsedRequest;
   }
 
 }

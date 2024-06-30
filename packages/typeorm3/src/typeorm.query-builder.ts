@@ -1,27 +1,26 @@
 import { Brackets, ObjectLiteral, SelectQueryBuilder, WhereExpressionBuilder } from 'typeorm';
-import { QueryBuilderContract } from '../contracts/query-builder.contract';
 import {
-  ParsedRequest, ParsedRequestOrder,
+  QueryBuilderContract,
+  ParsedRequest,
+  ParsedRequestOrder,
   ParsedRequestRelation,
-  ParsedRequestSelect
-} from '../models/parsed-request';
-import {
+  ParsedRequestSelect,
   ParsedRequestWhere,
   ParsedRequestWhereField,
-  ParsedRequestWhereOperator
-} from '../models/parsed-request-where';
-import { ensureArray, ensureFalsy } from '../utils/functions';
-import { GetManyProxy } from '../models/get-many.proxy';
+  ParsedRequestWhereOperator,
+  GetManyProxy,
+} from '@crud-query-parser/core';
+import { ensureArray, ensureFalsy } from '@crud-query-parser/core/utils';
 
 /**
  * Adapts queries to TypeORM 0.3+ repository.find() object
  */
-export class TypeormQueryBuilder implements QueryBuilderContract<SelectQueryBuilder<any>> {
+export class TypeormQueryBuilder implements QueryBuilderContract<SelectQueryBuilder<any>, ObjectLiteral> {
 
   /**
    * @inheritDoc
    */
-  public build<E>(qb: SelectQueryBuilder<E>, query: ParsedRequest): SelectQueryBuilder<E> {
+  public build<E extends ObjectLiteral>(qb: SelectQueryBuilder<E>, query: ParsedRequest): SelectQueryBuilder<E> {
     qb = this.createBaseQuery(qb, query);
     qb = this.paginateQuery(qb, query);
 
@@ -31,7 +30,7 @@ export class TypeormQueryBuilder implements QueryBuilderContract<SelectQueryBuil
   /**
    * @inheritDoc
    */
-  public async getOne<E>(qb: SelectQueryBuilder<E | any>, request: ParsedRequest): Promise<E | null> {
+  public async getOne<E extends ObjectLiteral>(qb: SelectQueryBuilder<E | any>, request: ParsedRequest): Promise<E | null> {
     const query = this.createBaseQuery(qb, request);
     const entity = await query.getOne();
 
@@ -41,7 +40,7 @@ export class TypeormQueryBuilder implements QueryBuilderContract<SelectQueryBuil
   /**
    * @inheritDoc
    */
-  public async getMany<E>(qb: SelectQueryBuilder<E | any>, request: ParsedRequest): Promise<GetManyProxy<E>> {
+  public async getMany<E extends ObjectLiteral>(qb: SelectQueryBuilder<E | any>, request: ParsedRequest): Promise<GetManyProxy<E>> {
     const fullQuery = this.createBaseQuery(qb, request);
     const paginatedQuery = this.paginateQuery(fullQuery.clone(), request);
 
@@ -70,7 +69,7 @@ export class TypeormQueryBuilder implements QueryBuilderContract<SelectQueryBuil
    * @param qb The base query builder
    * @param query The parsed query
    */
-  protected createBaseQuery<E>(qb: SelectQueryBuilder<E>, query: ParsedRequest): SelectQueryBuilder<E> {
+  protected createBaseQuery<E extends ObjectLiteral>(qb: SelectQueryBuilder<E>, query: ParsedRequest): SelectQueryBuilder<E> {
     const paramsDefined: string[] = [];
 
     this.adaptSelect(qb, query.select);
@@ -87,7 +86,7 @@ export class TypeormQueryBuilder implements QueryBuilderContract<SelectQueryBuil
    * @param qb The query builder
    * @param query The parsed query
    */
-  protected paginateQuery<E>(qb: SelectQueryBuilder<E>, query: ParsedRequest): SelectQueryBuilder<E> {
+  protected paginateQuery<E extends ObjectLiteral>(qb: SelectQueryBuilder<E>, query: ParsedRequest): SelectQueryBuilder<E> {
     return qb.limit(query.limit).offset(query.offset);
   }
 
@@ -97,7 +96,7 @@ export class TypeormQueryBuilder implements QueryBuilderContract<SelectQueryBuil
    * @param qb The query builder
    * @param select The parsed select fields
    */
-  protected adaptSelect<E>(qb: SelectQueryBuilder<E>, select: ParsedRequestSelect): void {
+  protected adaptSelect<E extends ObjectLiteral>(qb: SelectQueryBuilder<E>, select: ParsedRequestSelect): void {
     qb.addSelect(select.map(s => s.field.join('.')));
   }
 
@@ -107,7 +106,7 @@ export class TypeormQueryBuilder implements QueryBuilderContract<SelectQueryBuil
    * @param qb The query builder
    * @param relations The parsed relation list
    */
-  protected adaptRelations<E>(qb: SelectQueryBuilder<E>, relations: ParsedRequestRelation[]): void {
+  protected adaptRelations<E extends ObjectLiteral>(qb: SelectQueryBuilder<E>, relations: ParsedRequestRelation[]): void {
     for (const relation of relations) {
       const path = relation.field.join('.');
       const alias = relation.alias || path.replace('.', '_');
@@ -122,7 +121,7 @@ export class TypeormQueryBuilder implements QueryBuilderContract<SelectQueryBuil
    * @param qb The query builder
    * @param ordering The parsed ordering
    */
-  protected adaptOrder<E>(qb: SelectQueryBuilder<E>, ordering: ParsedRequestOrder[]): void {
+  protected adaptOrder<E extends ObjectLiteral>(qb: SelectQueryBuilder<E>, ordering: ParsedRequestOrder[]): void {
     for (const order of ordering) {
       const path = order.field.join('.');
 
@@ -152,7 +151,7 @@ export class TypeormQueryBuilder implements QueryBuilderContract<SelectQueryBuil
     } else if (where.field) {
       console.log(where);
       const param = this.createParam(params, where.field);
-      const query = this.mapWhereOperators(where, param);
+      const query = this.mapWhereOperators(where as ParsedRequestWhereField, param);
 
       addWhere(query.where, query.params);
     }
@@ -187,7 +186,7 @@ export class TypeormQueryBuilder implements QueryBuilderContract<SelectQueryBuil
   protected mapWhereOperators(where: ParsedRequestWhereField, param: string): { where: string, params: ObjectLiteral } {
     const field = where.field.join('.');
     const operator = where.operator;
-    let value = where.value;
+    let value: unknown = where.value;
 
     switch (operator) {
       case ParsedRequestWhereOperator.EQ:
@@ -231,11 +230,11 @@ export class TypeormQueryBuilder implements QueryBuilderContract<SelectQueryBuil
         return { where: `${field} NOT IN (:...${param})`, params: { [param]: value } };
 
       case ParsedRequestWhereOperator.BETWEEN:
-        value = ensureArray('BETWEEN operator', value, 2);
+        const arr = ensureArray('BETWEEN operator', value, 2);
 
         return {
           where: `${field} BETWEEN :${param}_start AND :${param}_end`,
-          params: { [`${param}_start`]: value[0], [`${param}_end`]: value[1] },
+          params: { [`${param}_start`]: arr[0], [`${param}_end`]: arr[1] },
         };
 
       case ParsedRequestWhereOperator.IS_NULL:
