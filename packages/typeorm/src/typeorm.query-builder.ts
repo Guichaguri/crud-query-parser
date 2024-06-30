@@ -13,7 +13,7 @@ import {
 import { ensureArray, ensureFalsy } from '@crud-query-parser/core/utils';
 
 /**
- * Adapts queries to TypeORM 0.3+ repository.find() object
+ * Adapts queries to TypeORM query builder object
  */
 export class TypeormQueryBuilder implements QueryBuilderContract<SelectQueryBuilder<any>, ObjectLiteral> {
 

@@ -1,12 +1,12 @@
 {
-  "name": "@crud-query-parser/typeorm3",
+  "name": "@crud-query-parser/typeorm",
   "version": "1.0.0",
   "description": "",
   "license": "MIT",
   "author": "Guilherme Chaguri",
   "scripts": {
     "build": "rimraf ./dist & tsc",
-    "test": "ts-node ./test/test.ts"
+    "start:samples": "ts-node ./samples/main.ts"
   },
   "files": [
     "dist"
@@ -17,19 +17,11 @@
     ".": {
       "require": "./dist/index.js",
       "types": "./dist/index.d.ts"
-    },
-    "./parsers/crud": {
-      "require": "./dist/parsers/crud/index.js",
-      "types": "./dist/parsers/crud/index.d.ts"
-    },
-    "./utils": {
-      "require": "./dist/utils/index.js",
-      "types": "./dist/utils/index.d.ts"
     }
   },
   "peerDependencies": {
     "@crud-query-parser/core": "*",
-    "typeorm": "0.3.x"
+    "typeorm": "0.2.x || 0.3.x"
   },
   "devDependencies": {
     "@crud-query-parser/core": "*",
