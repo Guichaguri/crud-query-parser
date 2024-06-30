@@ -1,16 +1,13 @@
 import "reflect-metadata";
 import { AppDataSource } from './data-source';
 import { PostEntity } from './entities/post.entity';
-import { RequestParserBuilder } from '@crud-query-parser/core';
 import { CrudRequestParser } from '@crud-query-parser/core/parsers/crud';
 import { TypeormQueryBuilder } from '../src/typeorm.query-builder';
 
-const repository = AppDataSource.getRepository(PostEntity);
+const parser = new CrudRequestParser();
+const queryBuilder = new TypeormQueryBuilder();
 
-const parser = new RequestParserBuilder()
-  .setParser(new CrudRequestParser())
-  .setQueryBuilder(new TypeormQueryBuilder())
-  .build();
+const repository = AppDataSource.getRepository(PostEntity);
 
 async function run() {
   await AppDataSource.initialize();
@@ -20,7 +17,8 @@ async function run() {
   qs['s'] = JSON.stringify({ isActive: true });
   qs['limit'] = '5';
 
-  const data = await parser.getMany(repository.createQueryBuilder(), qs);
+  const request = parser.parse(qs);
+  const data = await queryBuilder.getMany<PostEntity>(repository.createQueryBuilder(), request);
 
   console.dir(data);
 }

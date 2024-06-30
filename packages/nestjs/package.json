@@ -1,11 +1,12 @@
 {
   "name": "@crud-query-parser/nestjs",
-  "version": "1.0.0",
-  "description": "",
+  "version": "0.0.1",
+  "description": "NestJS helpers to parse queries from HTTP requests",
   "license": "MIT",
   "author": "Guilherme Chaguri",
   "scripts": {
     "build": "rimraf ./dist & tsc",
+    "prepare": "npm run build",
     "test": "ts-node ./test/test.ts"
   },
   "files": [

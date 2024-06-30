@@ -6,7 +6,7 @@ import {
 } from '../../models/parsed-request';
 import { ParsedRequestWhereBuilder } from '../parsed-request-where.builder';
 import { parseCrudSearch } from './parseCrudSearch';
-import { isValid } from '../../utils/functions';
+import { isValid } from '../../utils';
 import { SCondition } from './types';
 
 /**
