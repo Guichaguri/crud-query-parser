@@ -1,7 +1,8 @@
+import { FieldPath } from './field-path';
 import { ParsedRequestWhere } from './parsed-request-where';
 
 export interface ParsedRequestFields {
-  field: string[];
+  field: FieldPath;
 }
 
 export interface ParsedRequestRelation extends ParsedRequestFields {

@@ -22,6 +22,10 @@
       "require": "./dist/parsers/crud/index.js",
       "types": "./dist/parsers/crud/index.d.ts"
     },
+    "./filters": {
+      "require": "./dist/filters/index.js",
+      "types": "./dist/filters/index.d.ts"
+    },
     "./utils": {
       "require": "./dist/utils/index.js",
       "types": "./dist/utils/index.d.ts"

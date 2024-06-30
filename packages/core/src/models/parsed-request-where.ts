@@ -1,3 +1,4 @@
+import { FieldPath } from './field-path';
 
 export type ParsedRequestWhere = ParsedRequestWhereAND | ParsedRequestWhereOR | ParsedRequestWhereField;
 
@@ -20,7 +21,7 @@ export interface ParsedRequestWhereField {
    *
    * For post.category.name, this would be ["post", "category", "name"]
    */
-  field: string[];
+  field: FieldPath;
 
   /**
    * The operator of the comparison
