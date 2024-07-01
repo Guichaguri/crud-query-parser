@@ -140,16 +140,15 @@ export class TypeormQueryBuilder implements QueryBuilderContract<SelectQueryBuil
   protected adaptWhere(qb: WhereExpressionBuilder, where: ParsedRequestWhere, or: boolean, params: string[]): void {
     const addWhere = (or ? qb.orWhere : qb.andWhere).bind(qb);
 
-    if (where.or) {
+    if (where.or && where.or.length > 0) {
       addWhere(new Brackets(
         wqb => where.or.forEach(item => this.adaptWhere(wqb, item, true, params))
       ));
-    } else if (where.and) {
+    } else if (where.and && where.and.length > 0) {
       addWhere(new Brackets(
         wqb => where.and.forEach(item => this.adaptWhere(wqb, item, false, params))
       ));
     } else if (where.field) {
-      console.log(where);
       const param = this.createParam(params, where.field);
       const query = this.mapWhereOperators(where as ParsedRequestWhereField, param);
 
