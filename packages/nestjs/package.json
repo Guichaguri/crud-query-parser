@@ -44,12 +44,12 @@
     },
     "./parsers/crud": {
       "import": {
-        "default": "./dist/parsers/crud/index.js",
-        "types": "./dist/parsers/crud/index.d.ts"
+        "default": "./dist/parsers/crud/index.mjs",
+        "types": "./dist/parsers/crud/index.d.mts"
       },
       "require": {
-        "default": "./dist/parsers/crud/index.cjs",
-        "types": "./dist/parsers/crud/index.d.cts"
+        "default": "./dist/parsers/crud/index.js",
+        "types": "./dist/parsers/crud/index.d.ts"
       }
     }
   },
