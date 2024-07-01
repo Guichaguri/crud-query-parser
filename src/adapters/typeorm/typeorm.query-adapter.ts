@@ -1,18 +1,10 @@
 import { Brackets, ObjectLiteral, SelectQueryBuilder, WhereExpressionBuilder } from 'typeorm';
 import { QueryAdapter } from '../../models/query-adapter';
-import {
-  CrudRequest,
-  CrudRequestOrder,
-  CrudRequestRelation,
-  ParsedRequestSelect
-} from '../../models/crud-request';
-import {
-  CrudRequestWhere,
-  CrudRequestWhereField,
-  CrudRequestWhereOperator
-} from '../../models/crud-request-where';
+import { CrudRequest, CrudRequestOrder, CrudRequestRelation, ParsedRequestSelect } from '../../models/crud-request';
+import { CrudRequestWhere, CrudRequestWhereField, CrudRequestWhereOperator } from '../../models/crud-request-where';
 import { GetManyResult } from '../../models/get-many-result';
 import { ensureArray, ensureFalsy } from '../../utils/functions';
+import { pathHasBase } from '../../utils/field-path';
 
 /**
  * Adapts queries to TypeORM query builder object
@@ -75,8 +67,8 @@ export class TypeormQueryAdapter implements QueryAdapter<SelectQueryBuilder<any>
     const paramsDefined: string[] = [];
 
     this.adaptSelect(qb, query.select);
-    this.adaptRelations(qb, query.relations);
-    this.adaptWhere(qb, query.where, false, paramsDefined);
+    this.adaptRelations(qb, query.relations, query.select);
+    this.adaptWhere(qb.alias, qb, query.where, false, paramsDefined);
     this.adaptOrder(qb, query.order);
 
     return qb;
@@ -99,7 +91,13 @@ export class TypeormQueryAdapter implements QueryAdapter<SelectQueryBuilder<any>
    * @param select The parsed select fields
    */
   protected adaptSelect<E extends ObjectLiteral>(qb: SelectQueryBuilder<E>, select: ParsedRequestSelect): void {
-    qb.addSelect(select.map(s => s.field.join('.')));
+    if (select.length === 0)
+      return;
+
+    // Only fields that are one level deep
+    const fields = select.filter(f => f.field.length === 1);
+
+    qb.select(fields.map(s => [qb.alias, ...s.field].join('.')));
   }
 
   /**
@@ -107,13 +105,21 @@ export class TypeormQueryAdapter implements QueryAdapter<SelectQueryBuilder<any>
    *
    * @param qb The query builder
    * @param relations The parsed relation list
+   * @param select The parsed select fields
    */
-  protected adaptRelations<E extends ObjectLiteral>(qb: SelectQueryBuilder<E>, relations: CrudRequestRelation[]): void {
+  protected adaptRelations<E extends ObjectLiteral>(qb: SelectQueryBuilder<E>, relations: CrudRequestRelation[], select: ParsedRequestSelect): void {
     for (const relation of relations) {
-      const path = relation.field.join('.');
+      const path = [qb.alias, ...relation.field].join('.');
       const alias = relation.alias || path.replace('.', '_');
 
-      qb.leftJoin(path, alias);
+      const fields = select.filter(f => pathHasBase(f.field, relation.field));
+
+      if (fields.length === 0) {
+        qb.leftJoinAndSelect(path, alias);
+      } else {
+        qb.leftJoin(path, alias);
+        qb.addSelect(fields.map(f => [alias, f.field[f.field.length - 1]].join('.')));
+      }
     }
   }
 
@@ -125,7 +131,7 @@ export class TypeormQueryAdapter implements QueryAdapter<SelectQueryBuilder<any>
    */
   protected adaptOrder<E extends ObjectLiteral>(qb: SelectQueryBuilder<E>, ordering: CrudRequestOrder[]): void {
     for (const order of ordering) {
-      const path = order.field.join('.');
+      const path = [qb.alias, ...order.field].join('.');
 
       qb.addOrderBy(path, order.order);
     }
@@ -134,25 +140,26 @@ export class TypeormQueryAdapter implements QueryAdapter<SelectQueryBuilder<any>
   /**
    * Adapts a where condition
    *
+   * @param alias The query builder alias
    * @param qb The query builder
    * @param where The quere condition
    * @param or Whether this where condition is AND/OR
    * @param params The registered parameter name list
    */
-  protected adaptWhere(qb: WhereExpressionBuilder, where: CrudRequestWhere, or: boolean, params: string[]): void {
+  protected adaptWhere(alias: string, qb: WhereExpressionBuilder, where: CrudRequestWhere, or: boolean, params: string[]): void {
     const addWhere = (or ? qb.orWhere : qb.andWhere).bind(qb);
 
     if (where.or && where.or.length > 0) {
       addWhere(new Brackets(
-        wqb => where.or!.forEach(item => this.adaptWhere(wqb, item, true, params))
+        wqb => where.or!.forEach(item => this.adaptWhere(alias, wqb, item, true, params))
       ));
     } else if (where.and && where.and.length > 0) {
       addWhere(new Brackets(
-        wqb => where.and!.forEach(item => this.adaptWhere(wqb, item, false, params))
+        wqb => where.and!.forEach(item => this.adaptWhere(alias, wqb, item, false, params))
       ));
     } else if (where.field) {
       const param = this.createParam(params, where.field);
-      const query = this.mapWhereOperators(where as CrudRequestWhereField, param);
+      const query = this.mapWhereOperators(alias, where as CrudRequestWhereField, param);
 
       addWhere(query.where, query.params);
     }
@@ -181,11 +188,12 @@ export class TypeormQueryAdapter implements QueryAdapter<SelectQueryBuilder<any>
   /**
    * Maps where operators to a pseudo-SQL statement and a parameter map
    *
+   * @param alias The query builder alias
    * @param where The where condition
    * @param param The parameter name
    */
-  protected mapWhereOperators(where: CrudRequestWhereField, param: string): { where: string, params: ObjectLiteral } {
-    const field = where.field.join('.');
+  protected mapWhereOperators(alias: string, where: CrudRequestWhereField, param: string): { where: string, params: ObjectLiteral } {
+    const field = [alias, ...where.field].join('.');
     const operator = where.operator;
     let value: unknown = where.value;
 

@@ -3,25 +3,52 @@ import { AppDataSource } from './data-source';
 import { PostEntity } from './entities/post.entity';
 import { CrudRequestParser } from '../../src/parsers/crud';
 import { TypeormQueryAdapter } from '../../src/adapters/typeorm';
+import { CategoryEntity } from './entities/category.entity';
 
 const parser = new CrudRequestParser();
 const queryBuilder = new TypeormQueryAdapter();
 
 const repository = AppDataSource.getRepository(PostEntity);
 
-async function run() {
+async function setupDatabase(): Promise<void> {
   await AppDataSource.initialize();
+
+  const categoryRepository = AppDataSource.getRepository(CategoryEntity);
+
+  await repository.clear();
+  await categoryRepository.clear();
+
+  await categoryRepository.save(new CategoryEntity({
+    id: 1,
+    name: 'Games',
+  }));
+
+  await repository.save(new PostEntity({
+    id: 1,
+    categoryId: 1,
+    title: 'Hello World',
+    content: 'This is a sample post',
+    isActive: true,
+  }));
+}
+
+async function run() {
+  await setupDatabase();
 
   const qs: Record<string, string> = {};
 
   qs['s'] = JSON.stringify({ isActive: true });
+  qs['fields'] = 'id,title';
+  qs['join'] = 'category';
   qs['limit'] = '5';
 
   const request = parser.parse(qs);
 
+  console.dir(request, { depth: 5 });
+
   const data = await queryBuilder.getMany<PostEntity>(repository.createQueryBuilder(), request);
 
-  console.dir(data);
+  console.dir(data, { depth: 5 });
 }
 
 run();

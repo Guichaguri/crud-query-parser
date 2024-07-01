@@ -19,9 +19,8 @@ export class PostEntity {
   @Column({ default: true })
   public isActive!: boolean;
 
-  @OneToMany(() => CategoryEntity, entity => entity.posts)
+  @ManyToOne(() => CategoryEntity, entity => entity.posts)
   public category!: CategoryEntity;
-
 
   constructor(entity?: Partial<PostEntity>) {
     Object.assign(this, { ...entity });
