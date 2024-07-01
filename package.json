@@ -1,6 +1,6 @@
 {
   "name": "crud-query-parser",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "description": "Parses HTTP requests and converts them into database queries",
   "license": "MIT",
   "author": "Guilherme Chaguri",
