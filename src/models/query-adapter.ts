@@ -1,12 +1,12 @@
-import { ParsedRequest } from '../models/parsed-request';
-import { GetManyProxy } from '../models/get-many.proxy';
+import { CrudRequest } from './crud-request';
+import { GetManyResult } from './get-many-result';
 
 /**
  * Represents a class that can build queries based on parsed requests
  *
  * @param T The database adapter query builder object
  */
-export interface QueryBuilderContract<T, BaseEntity = any> {
+export interface QueryAdapter<T, BaseEntity = any> {
 
   /**
    * Converts a parsed request object into a database query format
@@ -14,7 +14,7 @@ export interface QueryBuilderContract<T, BaseEntity = any> {
    * @param baseQuery The base query to start of
    * @param request The parsed request object
    */
-  build<E extends BaseEntity>(baseQuery: T, request: ParsedRequest): T;
+  build<E extends BaseEntity>(baseQuery: T, request: CrudRequest): T;
 
   /**
    * Fetches one entity based on a parsed request object
@@ -22,7 +22,7 @@ export interface QueryBuilderContract<T, BaseEntity = any> {
    * @param baseQuery The base query to start of
    * @param request The parsed request object
    */
-  getOne<E extends BaseEntity>(baseQuery: T, request: ParsedRequest): Promise<E | null>;
+  getOne<E extends BaseEntity>(baseQuery: T, request: CrudRequest): Promise<E | null>;
 
   /**
    * Fetches a paginated list of entities based on a parsed request object
@@ -30,6 +30,6 @@ export interface QueryBuilderContract<T, BaseEntity = any> {
    * @param baseQuery The base query to start of
    * @param request The parsed request object
    */
-  getMany<E extends BaseEntity>(baseQuery: T, request: ParsedRequest): Promise<GetManyProxy<E>>;
+  getMany<E extends BaseEntity>(baseQuery: T, request: CrudRequest): Promise<GetManyResult<E>>;
 
 }

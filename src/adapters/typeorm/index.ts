@@ -1,2 +1,2 @@
 
-export * from './typeorm.query-builder';
+export * from './typeorm.query-adapter';

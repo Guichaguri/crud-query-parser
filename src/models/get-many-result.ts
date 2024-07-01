@@ -1,5 +1,5 @@
 
-export interface GetManyProxy<T> {
+export interface GetManyResult<T> {
 
   /**
    * The entity list

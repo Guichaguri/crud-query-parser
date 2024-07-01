@@ -1,28 +1,28 @@
 import { Brackets, ObjectLiteral, SelectQueryBuilder, WhereExpressionBuilder } from 'typeorm';
-import { QueryBuilderContract } from '../../contracts/query-builder.contract';
+import { QueryAdapter } from '../../models/query-adapter';
 import {
-  ParsedRequest,
-  ParsedRequestOrder,
-  ParsedRequestRelation,
+  CrudRequest,
+  CrudRequestOrder,
+  CrudRequestRelation,
   ParsedRequestSelect
-} from '../../models/parsed-request';
+} from '../../models/crud-request';
 import {
-  ParsedRequestWhere,
-  ParsedRequestWhereField,
-  ParsedRequestWhereOperator
-} from '../../models/parsed-request-where';
+  CrudRequestWhere,
+  CrudRequestWhereField,
+  CrudRequestWhereOperator
+} from '../../models/crud-request-where';
+import { GetManyResult } from '../../models/get-many-result';
 import { ensureArray, ensureFalsy } from '../../utils/functions';
-import { GetManyProxy } from '../../models/get-many.proxy';
 
 /**
  * Adapts queries to TypeORM query builder object
  */
-export class TypeormQueryBuilder implements QueryBuilderContract<SelectQueryBuilder<any>, ObjectLiteral> {
+export class TypeormQueryAdapter implements QueryAdapter<SelectQueryBuilder<any>, ObjectLiteral> {
 
   /**
    * @inheritDoc
    */
-  public build<E extends ObjectLiteral>(qb: SelectQueryBuilder<E>, query: ParsedRequest): SelectQueryBuilder<E> {
+  public build<E extends ObjectLiteral>(qb: SelectQueryBuilder<E>, query: CrudRequest): SelectQueryBuilder<E> {
     qb = this.createBaseQuery(qb, query);
     qb = this.paginateQuery(qb, query);
 
@@ -32,7 +32,7 @@ export class TypeormQueryBuilder implements QueryBuilderContract<SelectQueryBuil
   /**
    * @inheritDoc
    */
-  public async getOne<E extends ObjectLiteral>(qb: SelectQueryBuilder<E | any>, request: ParsedRequest): Promise<E | null> {
+  public async getOne<E extends ObjectLiteral>(qb: SelectQueryBuilder<E | any>, request: CrudRequest): Promise<E | null> {
     const query = this.createBaseQuery(qb, request);
     const entity = await query.getOne();
 
@@ -42,7 +42,7 @@ export class TypeormQueryBuilder implements QueryBuilderContract<SelectQueryBuil
   /**
    * @inheritDoc
    */
-  public async getMany<E extends ObjectLiteral>(qb: SelectQueryBuilder<E | any>, request: ParsedRequest): Promise<GetManyProxy<E>> {
+  public async getMany<E extends ObjectLiteral>(qb: SelectQueryBuilder<E | any>, request: CrudRequest): Promise<GetManyResult<E>> {
     const fullQuery = this.createBaseQuery(qb, request);
     const paginatedQuery = this.paginateQuery(fullQuery.clone(), request);
 
@@ -71,7 +71,7 @@ export class TypeormQueryBuilder implements QueryBuilderContract<SelectQueryBuil
    * @param qb The base query builder
    * @param query The parsed query
    */
-  protected createBaseQuery<E extends ObjectLiteral>(qb: SelectQueryBuilder<E>, query: ParsedRequest): SelectQueryBuilder<E> {
+  protected createBaseQuery<E extends ObjectLiteral>(qb: SelectQueryBuilder<E>, query: CrudRequest): SelectQueryBuilder<E> {
     const paramsDefined: string[] = [];
 
     this.adaptSelect(qb, query.select);
@@ -88,7 +88,7 @@ export class TypeormQueryBuilder implements QueryBuilderContract<SelectQueryBuil
    * @param qb The query builder
    * @param query The parsed query
    */
-  protected paginateQuery<E extends ObjectLiteral>(qb: SelectQueryBuilder<E>, query: ParsedRequest): SelectQueryBuilder<E> {
+  protected paginateQuery<E extends ObjectLiteral>(qb: SelectQueryBuilder<E>, query: CrudRequest): SelectQueryBuilder<E> {
     return qb.limit(query.limit).offset(query.offset);
   }
 
@@ -108,7 +108,7 @@ export class TypeormQueryBuilder implements QueryBuilderContract<SelectQueryBuil
    * @param qb The query builder
    * @param relations The parsed relation list
    */
-  protected adaptRelations<E extends ObjectLiteral>(qb: SelectQueryBuilder<E>, relations: ParsedRequestRelation[]): void {
+  protected adaptRelations<E extends ObjectLiteral>(qb: SelectQueryBuilder<E>, relations: CrudRequestRelation[]): void {
     for (const relation of relations) {
       const path = relation.field.join('.');
       const alias = relation.alias || path.replace('.', '_');
@@ -123,7 +123,7 @@ export class TypeormQueryBuilder implements QueryBuilderContract<SelectQueryBuil
    * @param qb The query builder
    * @param ordering The parsed ordering
    */
-  protected adaptOrder<E extends ObjectLiteral>(qb: SelectQueryBuilder<E>, ordering: ParsedRequestOrder[]): void {
+  protected adaptOrder<E extends ObjectLiteral>(qb: SelectQueryBuilder<E>, ordering: CrudRequestOrder[]): void {
     for (const order of ordering) {
       const path = order.field.join('.');
 
@@ -139,7 +139,7 @@ export class TypeormQueryBuilder implements QueryBuilderContract<SelectQueryBuil
    * @param or Whether this where condition is AND/OR
    * @param params The registered parameter name list
    */
-  protected adaptWhere(qb: WhereExpressionBuilder, where: ParsedRequestWhere, or: boolean, params: string[]): void {
+  protected adaptWhere(qb: WhereExpressionBuilder, where: CrudRequestWhere, or: boolean, params: string[]): void {
     const addWhere = (or ? qb.orWhere : qb.andWhere).bind(qb);
 
     if (where.or && where.or.length > 0) {
@@ -152,7 +152,7 @@ export class TypeormQueryBuilder implements QueryBuilderContract<SelectQueryBuil
       ));
     } else if (where.field) {
       const param = this.createParam(params, where.field);
-      const query = this.mapWhereOperators(where as ParsedRequestWhereField, param);
+      const query = this.mapWhereOperators(where as CrudRequestWhereField, param);
 
       addWhere(query.where, query.params);
     }
@@ -184,53 +184,53 @@ export class TypeormQueryBuilder implements QueryBuilderContract<SelectQueryBuil
    * @param where The where condition
    * @param param The parameter name
    */
-  protected mapWhereOperators(where: ParsedRequestWhereField, param: string): { where: string, params: ObjectLiteral } {
+  protected mapWhereOperators(where: CrudRequestWhereField, param: string): { where: string, params: ObjectLiteral } {
     const field = where.field.join('.');
     const operator = where.operator;
     let value: unknown = where.value;
 
     switch (operator) {
-      case ParsedRequestWhereOperator.EQ:
+      case CrudRequestWhereOperator.EQ:
         return { where: `${field} = :${param}`, params: { [param]: value } };
 
-      case ParsedRequestWhereOperator.NEQ:
+      case CrudRequestWhereOperator.NEQ:
         return { where: `${field} != :${param}`, params: { [param]: value } };
 
-      case ParsedRequestWhereOperator.GT:
+      case CrudRequestWhereOperator.GT:
         return { where: `${field} > :${param}`, params: { [param]: value } };
 
-      case ParsedRequestWhereOperator.GTE:
+      case CrudRequestWhereOperator.GTE:
         return { where: `${field} >= :${param}`, params: { [param]: value } };
 
-      case ParsedRequestWhereOperator.LT:
+      case CrudRequestWhereOperator.LT:
         return { where: `${field} < :${param}`, params: { [param]: value } };
 
-      case ParsedRequestWhereOperator.LTE:
+      case CrudRequestWhereOperator.LTE:
         return { where: `${field} <= :${param}`, params: { [param]: value } };
 
-      case ParsedRequestWhereOperator.STARTS:
+      case CrudRequestWhereOperator.STARTS:
         return { where: `${field} LIKE :${param}`, params: { [param]: `${value}%` } };
 
-      case ParsedRequestWhereOperator.ENDS:
+      case CrudRequestWhereOperator.ENDS:
         return { where: `${field} LIKE :${param}`, params: { [param]: `%${value}` } };
 
-      case ParsedRequestWhereOperator.CONTAINS:
+      case CrudRequestWhereOperator.CONTAINS:
         return { where: `${field} LIKE :${param}`, params: { [param]: `%${value}%` } };
 
-      case ParsedRequestWhereOperator.NOT_CONTAINS:
+      case CrudRequestWhereOperator.NOT_CONTAINS:
         return { where: `${field} NOT LIKE :${param}`, params: { [param]: `%${value}%` } };
 
-      case ParsedRequestWhereOperator.IN:
+      case CrudRequestWhereOperator.IN:
         value = ensureArray('IN operator', value, 1);
 
         return { where: `${field} IN (:...${param})`, params: { [param]: value } };
 
-      case ParsedRequestWhereOperator.NOT_IN:
+      case CrudRequestWhereOperator.NOT_IN:
         value = ensureArray('NOT IN operator', value, 1);
 
         return { where: `${field} NOT IN (:...${param})`, params: { [param]: value } };
 
-      case ParsedRequestWhereOperator.BETWEEN:
+      case CrudRequestWhereOperator.BETWEEN:
         const arr = ensureArray('BETWEEN operator', value, 2);
 
         return {
@@ -238,40 +238,40 @@ export class TypeormQueryBuilder implements QueryBuilderContract<SelectQueryBuil
           params: { [`${param}_start`]: arr[0], [`${param}_end`]: arr[1] },
         };
 
-      case ParsedRequestWhereOperator.IS_NULL:
+      case CrudRequestWhereOperator.IS_NULL:
         ensureFalsy('IS NULL operator', value);
 
         return { where: `${field} IS NULL`, params: {} };
 
-      case ParsedRequestWhereOperator.NOT_NULL:
+      case CrudRequestWhereOperator.NOT_NULL:
         ensureFalsy('NOT NULL operator', value);
 
         return { where: `${field} IS NOT NULL`, params: {} };
 
-      case ParsedRequestWhereOperator.EQ_LOWER:
+      case CrudRequestWhereOperator.EQ_LOWER:
         return { where: `LOWER(${field}) = :${param}`, params: { [param]: value } };
 
-      case ParsedRequestWhereOperator.NEQ_LOWER:
+      case CrudRequestWhereOperator.NEQ_LOWER:
         return { where: `LOWER(${field}) != :${param}`, params: { [param]: value } };
 
-      case ParsedRequestWhereOperator.STARTS_LOWER:
+      case CrudRequestWhereOperator.STARTS_LOWER:
         return { where: `LOWER(${field}) LIKE :${param}`, params: { [param]: `${value}%` } };
 
-      case ParsedRequestWhereOperator.ENDS_LOWER:
+      case CrudRequestWhereOperator.ENDS_LOWER:
         return { where: `LOWER(${field}) LIKE :${param}`, params: { [param]: `%${value}` } };
 
-      case ParsedRequestWhereOperator.CONTAINS_LOWER:
+      case CrudRequestWhereOperator.CONTAINS_LOWER:
         return { where: `${field} LIKE :${param}`, params: { [param]: `%${value}%` } };
 
-      case ParsedRequestWhereOperator.NOT_CONTAINS_LOWER:
+      case CrudRequestWhereOperator.NOT_CONTAINS_LOWER:
         return { where: `${field} NOT LIKE :${param}`, params: { [param]: `%${value}%` } };
 
-      case ParsedRequestWhereOperator.IN_LOWER:
+      case CrudRequestWhereOperator.IN_LOWER:
         ensureArray('IN operator', value, 1);
 
         return { where: `${field} IN (...:${param})`, params: { [param]: value } };
 
-      case ParsedRequestWhereOperator.NOT_IN_LOWER:
+      case CrudRequestWhereOperator.NOT_IN_LOWER:
         ensureArray('NOT IN operator', value, 1);
 
         return { where: `${field} NOT IN (...:${param})`, params: { [param]: value } };

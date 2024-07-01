@@ -1,20 +1,20 @@
 import { FieldPath } from './field-path';
 
-export type ParsedRequestWhere = ParsedRequestWhereAND | ParsedRequestWhereOR | ParsedRequestWhereField;
+export type CrudRequestWhere = CrudRequestWhereAND | CrudRequestWhereOR | CrudRequestWhereField;
 
-export interface ParsedRequestWhereAND {
+export interface CrudRequestWhereAND {
   field?: never;
   or?: never;
-  and: ParsedRequestWhere[];
+  and: CrudRequestWhere[];
 }
 
-export interface ParsedRequestWhereOR {
+export interface CrudRequestWhereOR {
   field?: never;
-  or: ParsedRequestWhere[];
+  or: CrudRequestWhere[];
   and?: never;
 }
 
-export interface ParsedRequestWhereField {
+export interface CrudRequestWhereField {
 
   /**
    * Field path
@@ -26,20 +26,20 @@ export interface ParsedRequestWhereField {
   /**
    * The operator of the comparison
    */
-  operator: ParsedRequestWhereOperator;
+  operator: CrudRequestWhereOperator;
 
   /**
    * The value to compare
    */
-  value: ParsedRequestWhereValueType | ParsedRequestWhereValueType[];
+  value: CrudRequestWhereValueType | CrudRequestWhereValueType[];
 
   or?: never;
   and?: never;
 }
 
-export type ParsedRequestWhereValueType = string | number | boolean | Date | null | undefined;
+export type CrudRequestWhereValueType = string | number | boolean | Date | null | undefined;
 
-export enum ParsedRequestWhereOperator {
+export enum CrudRequestWhereOperator {
   EQ = 'eq',
   NEQ = 'neq',
   GT = 'gt',

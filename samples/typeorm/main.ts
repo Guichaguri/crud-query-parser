@@ -2,10 +2,10 @@ import "reflect-metadata";
 import { AppDataSource } from './data-source';
 import { PostEntity } from './entities/post.entity';
 import { CrudRequestParser } from '@crud-query-parser/core/parsers/crud';
-import { TypeormQueryBuilder } from '../../src/adapters/typeorm';
+import { TypeormQueryAdapter } from '../../src/adapters/typeorm';
 
 const parser = new CrudRequestParser();
-const queryBuilder = new TypeormQueryBuilder();
+const queryBuilder = new TypeormQueryAdapter();
 
 const repository = AppDataSource.getRepository(PostEntity);
 

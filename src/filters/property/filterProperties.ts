@@ -1,5 +1,5 @@
-import { ParsedRequest } from '../../models/parsed-request';
-import { ParsedRequestWhere } from '../../models/parsed-request-where';
+import { CrudRequest } from '../../models/crud-request';
+import { CrudRequestWhere } from '../../models/crud-request-where';
 
 /**
  * Filters access to an allowlist of properties and relations.
@@ -8,10 +8,10 @@ import { ParsedRequestWhere } from '../../models/parsed-request-where';
  * @param request The parsed request
  * @param allowedProperties The list of properties (in case of a field path, separated by dot) that will be allowed
  */
-export function filterPropertyAccess(
-  request: ParsedRequest,
+export function filterProperties(
+  request: CrudRequest,
   allowedProperties: string[],
-): ParsedRequest {
+): CrudRequest {
   let select = request.select;
 
   if (select.length === 0) {
@@ -37,9 +37,9 @@ export function filterPropertyAccess(
 }
 
 function filterPropertyAccessWhere(
-  where: ParsedRequestWhere,
+  where: CrudRequestWhere,
   allowedProperties: string[],
-): ParsedRequestWhere {
+): CrudRequestWhere {
   if (where.or) {
     return {
       or: where.or.map(w => filterPropertyAccessWhere(w, allowedProperties)),

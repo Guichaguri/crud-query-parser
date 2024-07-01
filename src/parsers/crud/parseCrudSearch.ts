@@ -1,6 +1,6 @@
-import { ParsedRequestWhereBuilder } from '../parsed-request-where.builder';
-import { ParsedRequestWhereOperator } from '../../models/parsed-request-where';
-import { SCondition, SConditionAND, SField, SFieldOperator, SFields } from './types';
+import { ParsedRequestWhereBuilder } from '../../utils/parsed-request-where.builder';
+import { CrudRequestWhereOperator } from '../../models/crud-request-where';
+import { SCondition, SField, SFieldOperator, SFields } from './types';
 import { isValid } from '../../utils/functions';
 
 /**
@@ -97,7 +97,7 @@ function parseCrudSearchField(builder: ParsedRequestWhereBuilder, name: string[]
   // Primitive Value
   // { field: 'text', field2: 12, field3: true }
   if (typeof field !== 'object') {
-    builder.addField(name, ParsedRequestWhereOperator.EQ, field);
+    builder.addField(name, CrudRequestWhereOperator.EQ, field);
     return;
   }
 
@@ -105,30 +105,30 @@ function parseCrudSearchField(builder: ParsedRequestWhereBuilder, name: string[]
 
   // Operator
   // { field: { $gte: 10 } }
-  const operatorMap: Record<OperatorType, ParsedRequestWhereOperator> = {
-    $eq: ParsedRequestWhereOperator.EQ,
-    $ne: ParsedRequestWhereOperator.NEQ,
-    $gt: ParsedRequestWhereOperator.GT,
-    $lt: ParsedRequestWhereOperator.LT,
-    $gte: ParsedRequestWhereOperator.GTE,
-    $lte: ParsedRequestWhereOperator.LTE,
-    $starts: ParsedRequestWhereOperator.STARTS,
-    $ends: ParsedRequestWhereOperator.ENDS,
-    $cont: ParsedRequestWhereOperator.CONTAINS,
-    $excl: ParsedRequestWhereOperator.NOT_CONTAINS,
-    $in: ParsedRequestWhereOperator.IN,
-    $notin: ParsedRequestWhereOperator.NOT_IN,
-    $between: ParsedRequestWhereOperator.BETWEEN,
-    $isnull: ParsedRequestWhereOperator.IS_NULL,
-    $notnull: ParsedRequestWhereOperator.NOT_NULL,
-    $eqL: ParsedRequestWhereOperator.EQ_LOWER,
-    $neL: ParsedRequestWhereOperator.NEQ_LOWER,
-    $startsL: ParsedRequestWhereOperator.STARTS_LOWER,
-    $endsL: ParsedRequestWhereOperator.ENDS_LOWER,
-    $contL: ParsedRequestWhereOperator.CONTAINS_LOWER,
-    $exclL: ParsedRequestWhereOperator.NOT_CONTAINS_LOWER,
-    $inL: ParsedRequestWhereOperator.IN_LOWER,
-    $notinL: ParsedRequestWhereOperator.NOT_IN_LOWER,
+  const operatorMap: Record<OperatorType, CrudRequestWhereOperator> = {
+    $eq: CrudRequestWhereOperator.EQ,
+    $ne: CrudRequestWhereOperator.NEQ,
+    $gt: CrudRequestWhereOperator.GT,
+    $lt: CrudRequestWhereOperator.LT,
+    $gte: CrudRequestWhereOperator.GTE,
+    $lte: CrudRequestWhereOperator.LTE,
+    $starts: CrudRequestWhereOperator.STARTS,
+    $ends: CrudRequestWhereOperator.ENDS,
+    $cont: CrudRequestWhereOperator.CONTAINS,
+    $excl: CrudRequestWhereOperator.NOT_CONTAINS,
+    $in: CrudRequestWhereOperator.IN,
+    $notin: CrudRequestWhereOperator.NOT_IN,
+    $between: CrudRequestWhereOperator.BETWEEN,
+    $isnull: CrudRequestWhereOperator.IS_NULL,
+    $notnull: CrudRequestWhereOperator.NOT_NULL,
+    $eqL: CrudRequestWhereOperator.EQ_LOWER,
+    $neL: CrudRequestWhereOperator.NEQ_LOWER,
+    $startsL: CrudRequestWhereOperator.STARTS_LOWER,
+    $endsL: CrudRequestWhereOperator.ENDS_LOWER,
+    $contL: CrudRequestWhereOperator.CONTAINS_LOWER,
+    $exclL: CrudRequestWhereOperator.NOT_CONTAINS_LOWER,
+    $inL: CrudRequestWhereOperator.IN_LOWER,
+    $notinL: CrudRequestWhereOperator.NOT_IN_LOWER,
   };
 
   const keys = Object.keys(field) as OperatorType[];

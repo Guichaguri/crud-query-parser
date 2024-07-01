@@ -1,5 +1,5 @@
 import { applyDecorators, createParamDecorator, ExecutionContext, Logger, SetMetadata, Type } from '@nestjs/common';
-import { RequestParserContract } from '../../contracts/request-parser.contract';
+import { RequestParser } from '../../models/request-parser';
 import { ApiQuery, createInstance, getMetadataFromContext } from './utils';
 
 export const CRUD_QUERY_PARSER = 'crud-query-parser';
@@ -9,7 +9,7 @@ export const CRUD_QUERY_PARSER = 'crud-query-parser';
  *
  * @param parserContract The parser that will be used
  */
-export function Crud(parserContract: RequestParserContract | Type<RequestParserContract>): MethodDecorator & ClassDecorator {
+export function Crud(parserContract: RequestParser | Type<RequestParser>): MethodDecorator & ClassDecorator {
   const parser = createInstance(parserContract);
 
   if (!parser) {
@@ -30,15 +30,15 @@ export function Crud(parserContract: RequestParserContract | Type<RequestParserC
 }
 
 /**
- * A parameter decorator that converts the query string into a `ParsedRequest` object
+ * A parameter decorator that converts the query string into a `CrudRequest` object
  */
-export const CrudRequest = createParamDecorator<RequestParserContract | Type<RequestParserContract>>(
-  (data: RequestParserContract | Type<RequestParserContract>, ctx: ExecutionContext) => {
+export const ParseCrudRequest = createParamDecorator<RequestParser | Type<RequestParser>>(
+  (data: RequestParser | Type<RequestParser>, ctx: ExecutionContext) => {
     const request = ctx.switchToHttp().getRequest();
-    const parser = data ? createInstance(data) : getMetadataFromContext<RequestParserContract>(ctx, CRUD_QUERY_PARSER);
+    const parser = data ? createInstance(data) : getMetadataFromContext<RequestParser>(ctx, CRUD_QUERY_PARSER);
 
     if (!parser) {
-      new Logger('CrudRequest').warn(`No crud request parser found. Please, define one with @Crud() or pass to @CrudRequest()`);
+      new Logger('ParseCrudRequest').warn(`No crud request parser found. Please, define one with @Crud() or pass to @CrudRequest()`);
 
       return {
         where: { and: [] },

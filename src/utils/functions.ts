@@ -1,4 +1,4 @@
-import { ParsedRequestFields } from '../models/parsed-request';
+import { CrudRequestFields } from '../models/crud-request';
 
 /*export function setFieldByPath<T>(obj: ParsedRequestFields<T>, field: string, value: T): void {
   const parts = field.split('.');

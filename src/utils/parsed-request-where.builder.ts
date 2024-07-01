@@ -1,16 +1,19 @@
 import {
-  ParsedRequestWhere, ParsedRequestWhereAND, ParsedRequestWhereField,
-  ParsedRequestWhereOperator, ParsedRequestWhereOR,
-  ParsedRequestWhereValueType
-} from '../models/parsed-request-where';
+  CrudRequestWhere,
+  CrudRequestWhereAND,
+  CrudRequestWhereField,
+  CrudRequestWhereOperator,
+  CrudRequestWhereOR,
+  CrudRequestWhereValueType
+} from '../models/crud-request-where';
 
 /**
- * A helper class that makes it easier to create a ParsedRequestWhere
+ * A helper class that makes it easier to create a CrudRequestWhere
  */
 export class ParsedRequestWhereBuilder {
 
   constructor(
-    private readonly where: ParsedRequestWhereAND | ParsedRequestWhereOR = { and: [] },
+    private readonly where: CrudRequestWhereAND | CrudRequestWhereOR = { and: [] },
     private readonly parent?: ParsedRequestWhereBuilder,
   ) { }
 
@@ -22,7 +25,7 @@ export class ParsedRequestWhereBuilder {
       return this;
     }
 
-    const inside: ParsedRequestWhereAND = { and: [] };
+    const inside: CrudRequestWhereAND = { and: [] };
     const builder = new ParsedRequestWhereBuilder(inside, this);
 
     this.where.or.push(inside);
@@ -38,7 +41,7 @@ export class ParsedRequestWhereBuilder {
       return this;
     }
 
-    const inside: ParsedRequestWhereOR = { or: [] };
+    const inside: CrudRequestWhereOR = { or: [] };
     const builder = new ParsedRequestWhereBuilder(inside, this);
 
     this.where.and.push(inside);
@@ -53,8 +56,8 @@ export class ParsedRequestWhereBuilder {
    * @param operator The comparison operator
    * @param value The value to compare
    */
-  public addField(field: string[], operator: ParsedRequestWhereOperator, value: ParsedRequestWhereValueType): ParsedRequestWhereBuilder {
-    const whereField: ParsedRequestWhereField = {
+  public addField(field: string[], operator: CrudRequestWhereOperator, value: CrudRequestWhereValueType): ParsedRequestWhereBuilder {
+    const whereField: CrudRequestWhereField = {
       field,
       operator,
       value,
@@ -74,7 +77,7 @@ export class ParsedRequestWhereBuilder {
   /**
    * Constructs the final where condition
    */
-  public build(): ParsedRequestWhere {
+  public build(): CrudRequestWhere {
     if (this.parent) {
       return this.parent.build();
     }

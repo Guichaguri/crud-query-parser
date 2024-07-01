@@ -1,10 +1,11 @@
-import { RequestParamValue, RequestParserContract } from '../../contracts/request-parser.contract';
+import { RequestParamValue, RequestParser } from '../../models/request-parser';
 import {
-  ParsedRequest,
-  ParsedRequestOrder, ParsedRequestRelation,
+  CrudRequest,
+  CrudRequestOrder,
+  CrudRequestRelation,
   ParsedRequestSelect
-} from '../../models/parsed-request';
-import { ParsedRequestWhereBuilder } from '../parsed-request-where.builder';
+} from '../../models/crud-request';
+import { ParsedRequestWhereBuilder } from '../../utils/parsed-request-where.builder';
 import { parseCrudSearch } from './parseCrudSearch';
 import { isValid } from '../../utils/functions';
 import { SCondition } from './types';
@@ -12,12 +13,12 @@ import { SCondition } from './types';
 /**
  * Parses a request based on the @nestjsx/crud format.
  */
-export class CrudRequestParser implements RequestParserContract {
+export class CrudRequestParser implements RequestParser {
 
-  public parse(query: Record<string, RequestParamValue>): ParsedRequest {
+  public parse(query: Record<string, RequestParamValue>): CrudRequest {
     const select: ParsedRequestSelect = [];
-    const relations: ParsedRequestRelation[] = [];
-    const ordering: ParsedRequestOrder[] = [];
+    const relations: CrudRequestRelation[] = [];
+    const ordering: CrudRequestOrder[] = [];
     const where = new ParsedRequestWhereBuilder();
 
     this.parseSelect(select, query['fields'] || query['select']);
@@ -50,7 +51,7 @@ export class CrudRequestParser implements RequestParserContract {
     });
   }
 
-  protected parseJoin(requestFields: ParsedRequestSelect, relations: ParsedRequestRelation[], rawJoin: RequestParamValue): void {
+  protected parseJoin(requestFields: ParsedRequestSelect, relations: CrudRequestRelation[], rawJoin: RequestParamValue): void {
     if (!rawJoin)
       return;
 
@@ -79,7 +80,7 @@ export class CrudRequestParser implements RequestParserContract {
     }
   }
 
-  protected parseOrder(ordering: ParsedRequestOrder[], rawOrder: RequestParamValue): void {
+  protected parseOrder(ordering: CrudRequestOrder[], rawOrder: RequestParamValue): void {
     if (!rawOrder)
       return;
 
