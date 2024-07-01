@@ -1,13 +1,31 @@
 {
   "name": "@crud-query-parser/core",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "description": "Parses HTTP requests and converts them into database query filters",
   "license": "MIT",
   "author": "Guilherme Chaguri",
   "scripts": {
-    "build": "rimraf ./dist & tsc",
-    "prepare": "npm run build",
-    "test": "ts-node ./test/test.ts"
+    "build": "tsup",
+    "prepublish": "npm run build"
+  },
+  "tsup": {
+    "entry": [
+      "src/index.ts",
+      "src/parsers/crud/index.ts",
+      "src/filters/index.ts"
+    ],
+    "target": "es2022",
+    "format": ["esm", "cjs"],
+    "outDir": "./dist",
+    "dts": true,
+    "cjsInterop": true,
+    "minify": true,
+    "splitting": false,
+    "sourcemap": true,
+    "clean": true,
+    "skipNodeModulesBundle": true,
+    "keepNames": true,
+    "bundle": true
   },
   "files": [
     "dist"
@@ -16,26 +34,39 @@
   "types": "./dist/index.d.ts",
   "exports": {
     ".": {
-      "require": "./dist/index.js",
-      "types": "./dist/index.d.ts"
+      "import": {
+        "default": "./dist/index.mjs",
+        "types": "./dist/index.d.mts"
+      },
+      "require": {
+        "default": "./dist/index.js",
+        "types": "./dist/index.d.ts"
+      }
     },
     "./parsers/crud": {
-      "require": "./dist/parsers/crud/index.js",
-      "types": "./dist/parsers/crud/index.d.ts"
+      "import": {
+        "default": "./dist/parsers/crud/index.js",
+        "types": "./dist/parsers/crud/index.d.mts"
+      },
+      "require": {
+        "default": "./dist/parsers/crud/index.js",
+        "types": "./dist/parsers/crud/index.d.ts"
+      }
     },
     "./filters": {
-      "require": "./dist/filters/index.js",
-      "types": "./dist/filters/index.d.ts"
-    },
-    "./utils": {
-      "require": "./dist/utils/index.js",
-      "types": "./dist/utils/index.d.ts"
+      "import": {
+        "default": "./dist/filters/index.mjs",
+        "types": "./dist/filters/index.d.mts"
+      },
+      "require": {
+        "default": "./dist/filters/index.js",
+        "types": "./dist/filters/index.d.ts"
+      }
     }
   },
   "devDependencies": {
     "@types/node": "^17.0.23",
-    "rimraf": "^5.0.7",
-    "ts-node": "^10.9.2",
-    "typescript": "^5.2.2"
+    "tsup": "^8.1.0",
+    "typescript": "^5.5.2"
   }
 }

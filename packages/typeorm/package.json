@@ -1,13 +1,33 @@
 {
   "name": "@crud-query-parser/typeorm",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "description": "Converts parsed requests into TypeORM queries",
   "license": "MIT",
   "author": "Guilherme Chaguri",
   "scripts": {
-    "build": "rimraf ./dist & tsc",
-    "prepare": "npm run build",
-    "start:samples": "ts-node ./samples/main.ts"
+    "start:samples": "ts-node ./samples/main.ts",
+    "build": "tsup --platform browser",
+    "prepublish": "npm run build"
+  },
+  "tsup": {
+    "entry": [
+      "src/index.ts"
+    ],
+    "target": "es2022",
+    "format": [
+      "esm",
+      "cjs"
+    ],
+    "outDir": "./dist",
+    "dts": true,
+    "cjsInterop": true,
+    "minify": true,
+    "splitting": false,
+    "sourcemap": true,
+    "clean": true,
+    "skipNodeModulesBundle": true,
+    "keepNames": true,
+    "bundle": true
   },
   "files": [
     "dist"
@@ -16,8 +36,14 @@
   "types": "./dist/index.d.ts",
   "exports": {
     ".": {
-      "require": "./dist/index.js",
-      "types": "./dist/index.d.ts"
+      "import": {
+        "default": "./dist/index.mjs",
+        "types": "./dist/index.d.mts"
+      },
+      "require": {
+        "default": "./dist/index.js",
+        "types": "./dist/index.d.ts"
+      }
     }
   },
   "peerDependencies": {
@@ -27,11 +53,11 @@
   "devDependencies": {
     "@crud-query-parser/core": "*",
     "@types/node": "^17.0.23",
-    "rimraf": "^5.0.7",
-    "ts-node": "^10.9.2",
-    "typescript": "^5.2.2",
     "reflect-metadata": "^0.1.13",
     "sqlite3": "^5.0.2",
-    "typeorm": "^0.3.3"
+    "ts-node": "^10.9.2",
+    "tsup": "^8.1.0",
+    "typeorm": "^0.3.3",
+    "typescript": "^5.5.2"
   }
 }

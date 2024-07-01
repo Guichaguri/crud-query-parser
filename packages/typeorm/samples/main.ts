@@ -18,6 +18,9 @@ async function run() {
   qs['limit'] = '5';
 
   const request = parser.parse(qs);
+
+  ensureCondition()
+
   const data = await queryBuilder.getMany<PostEntity>(repository.createQueryBuilder(), request);
 
   console.dir(data);

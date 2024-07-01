@@ -1,6 +1,6 @@
-import { ParsedRequest } from '../../parsed-request.decorator';
-import { CrudRequestParser } from '@crud-query-parser/core/parsers/crud';
 import { applyDecorators } from '@nestjs/common';
+import { CrudRequestParser } from '@crud-query-parser/core/parsers/crud';
+import { ParsedRequest } from '../../parsed-request.decorator';
 import { ApiQuery } from '../../utils/openapi';
 
 /**

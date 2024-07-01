@@ -10,7 +10,7 @@ import {
   ParsedRequestWhereOperator,
   GetManyProxy,
 } from '@crud-query-parser/core';
-import { ensureArray, ensureFalsy } from '@crud-query-parser/core/utils';
+import { ensureArray, ensureFalsy } from './utils';
 
 /**
  * Adapts queries to TypeORM query builder object
