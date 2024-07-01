@@ -13,7 +13,7 @@ export function ParsedCrudRequest(): ParameterDecorator {
 /**
  * A method or class decorator that adds the OpenAPI query parameters
  */
-export function ApiCrudQuery(): MethodDecorator | ClassDecorator {
+export function ApiCrudQuery(): MethodDecorator & ClassDecorator {
   // TODO add description
 
   return applyDecorators(
