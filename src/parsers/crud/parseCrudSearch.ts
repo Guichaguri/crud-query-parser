@@ -1,16 +1,16 @@
-import { ParsedRequestWhereBuilder } from '../../utils/parsed-request-where.builder';
+import { CrudRequestWhereBuilder } from '../../utils/crud-request-where.builder';
 import { CrudRequestWhereOperator } from '../../models/crud-request-where';
 import { SCondition, SField, SFieldOperator, SFields } from './types';
 import { isValid } from '../../utils/functions';
 
 /**
- * Parses a crud request condition and inserts into a ParsedRequestWhereBuilder
+ * Parses a crud request condition and inserts into a CrudRequestWhereBuilder
  *
  * @param builder The builder that the condition will be inserted to
  * @param cond The condition that must be parsed
  * @param context The field context
  */
-export function parseCrudSearch(builder: ParsedRequestWhereBuilder, cond: SCondition, context: string[] = []) {
+export function parseCrudSearch(builder: CrudRequestWhereBuilder, cond: SCondition, context: string[] = []) {
   if (typeof cond !== 'object')
     return;
 
@@ -66,7 +66,7 @@ export function parseCrudSearch(builder: ParsedRequestWhereBuilder, cond: SCondi
  * @param fields The fields object
  * @param context The context
  */
-function parseCrudSearchFields(builder: ParsedRequestWhereBuilder, fields: Omit<Omit<SFields, '$or'>, '$and'>, context: string[]): void {
+function parseCrudSearchFields(builder: CrudRequestWhereBuilder, fields: Omit<Omit<SFields, '$or'>, '$and'>, context: string[]): void {
   // { name: 'John', age: { $gte: 18 }, 'posts.name': { $cont: 'Greetings' } }
   for (const name of Object.keys(fields)) {
     const field = fields[name];
@@ -93,7 +93,7 @@ function parseCrudSearchFields(builder: ParsedRequestWhereBuilder, fields: Omit<
  * @param name The name path
  * @param field The field value or operator
  */
-function parseCrudSearchField(builder: ParsedRequestWhereBuilder, name: string[], field: SField): void {
+function parseCrudSearchField(builder: CrudRequestWhereBuilder, name: string[], field: SField): void {
   // Primitive Value
   // { field: 'text', field2: 12, field3: true }
   if (typeof field !== 'object') {

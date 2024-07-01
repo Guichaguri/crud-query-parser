@@ -8,5 +8,5 @@ export * from './models/crud-request';
 export * from './models/crud-request-where';
 
 // Utilities
-export * from './utils/parsed-request-where.builder';
+export * from './utils/crud-request-where.builder';
 

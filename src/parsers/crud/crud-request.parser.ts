@@ -6,7 +6,7 @@ import {
   ParsedRequestSelect
 } from '../../models/crud-request';
 import { OpenAPIParameter } from '../../models/openapi-parameter';
-import { ParsedRequestWhereBuilder } from '../../utils/parsed-request-where.builder';
+import { CrudRequestWhereBuilder } from '../../utils/crud-request-where.builder';
 import { parseCrudSearch } from './parseCrudSearch';
 import { isValid } from '../../utils/functions';
 import { SCondition } from './types';
@@ -17,6 +17,8 @@ import { SCondition } from './types';
 export class CrudRequestParser implements RequestParser {
 
   public getOpenAPIParameters(): OpenAPIParameter[] {
+    // TODO improve docs
+
     const arraySchema = {
       type: 'array',
       items: {
@@ -43,7 +45,7 @@ export class CrudRequestParser implements RequestParser {
       },
       {
         name: 'sort',
-        description: 'Search condition',
+        description: 'Sorting',
         required: false,
         schema: arraySchema,
         style: 'form',
@@ -88,7 +90,7 @@ export class CrudRequestParser implements RequestParser {
     const select: ParsedRequestSelect = [];
     const relations: CrudRequestRelation[] = [];
     const ordering: CrudRequestOrder[] = [];
-    const where = new ParsedRequestWhereBuilder();
+    const where = new CrudRequestWhereBuilder();
 
     this.parseSelect(select, query['fields'] || query['select']);
     this.parseJoin(select, relations, query['join']);
@@ -192,7 +194,7 @@ export class CrudRequestParser implements RequestParser {
     return { limit, offset };
   }
 
-  protected parseSearch(builder: ParsedRequestWhereBuilder, rawSearch: RequestParamValue): void {
+  protected parseSearch(builder: CrudRequestWhereBuilder, rawSearch: RequestParamValue): void {
     if (Array.isArray(rawSearch))
       rawSearch = rawSearch.length > 0 ? rawSearch[0] : undefined;
 

@@ -10,23 +10,23 @@ import {
 /**
  * A helper class that makes it easier to create a CrudRequestWhere
  */
-export class ParsedRequestWhereBuilder {
+export class CrudRequestWhereBuilder {
 
   constructor(
     private readonly where: CrudRequestWhereAND | CrudRequestWhereOR = { and: [] },
-    private readonly parent?: ParsedRequestWhereBuilder,
+    private readonly parent?: CrudRequestWhereBuilder,
   ) { }
 
   /**
    * Adds an AND bracket
    */
-  public addAnd(): ParsedRequestWhereBuilder {
+  public addAnd(): CrudRequestWhereBuilder {
     if (!this.where.or) {
       return this;
     }
 
     const inside: CrudRequestWhereAND = { and: [] };
-    const builder = new ParsedRequestWhereBuilder(inside, this);
+    const builder = new CrudRequestWhereBuilder(inside, this);
 
     this.where.or.push(inside);
 
@@ -36,13 +36,13 @@ export class ParsedRequestWhereBuilder {
   /**
    * Adds an OR bracket
    */
-  public addOr(): ParsedRequestWhereBuilder {
+  public addOr(): CrudRequestWhereBuilder {
     if (!this.where.and) {
       return this;
     }
 
     const inside: CrudRequestWhereOR = { or: [] };
-    const builder = new ParsedRequestWhereBuilder(inside, this);
+    const builder = new CrudRequestWhereBuilder(inside, this);
 
     this.where.and.push(inside);
 
@@ -56,7 +56,7 @@ export class ParsedRequestWhereBuilder {
    * @param operator The comparison operator
    * @param value The value to compare
    */
-  public addField(field: string[], operator: CrudRequestWhereOperator, value: CrudRequestWhereValueType): ParsedRequestWhereBuilder {
+  public addField(field: string[], operator: CrudRequestWhereOperator, value: CrudRequestWhereValueType): CrudRequestWhereBuilder {
     const whereField: CrudRequestWhereField = {
       field,
       operator,
