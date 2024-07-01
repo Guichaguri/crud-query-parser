@@ -13,6 +13,7 @@
       "src/index.ts",
       "src/adapters/typeorm/index.ts",
       "src/parsers/crud/index.ts",
+      "src/helpers/nestjs/index.ts",
       "src/filters/index.ts"
     ],
     "target": "es2022",
@@ -65,6 +66,16 @@
       "require": {
         "default": "./dist/parsers/crud/index.js",
         "types": "./dist/parsers/crud/index.d.ts"
+      }
+    },
+    "./helpers/nestjs": {
+      "import": {
+        "default": "./dist/helpers/nestjs/index.mjs",
+        "types": "./dist/helpers/nestjs/index.d.mts"
+      },
+      "require": {
+        "default": "./dist/helpers/nestjs/index.js",
+        "types": "./dist/helpers/nestjs/index.d.ts"
       }
     },
     "./filters": {

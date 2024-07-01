@@ -1,16 +1,11 @@
 import { ExecutionContext, Type } from '@nestjs/common';
-
-interface ApiQueryOptions {
-  name: string;
-  type: string;
-  isArray?: boolean;
-}
+import { OpenAPIParameter } from '../../models/openapi-parameter';
 
 export const ApiQuery = (() => {
   try {
     return require('@nestjs/swagger').ApiQuery;
   } catch (error) {
-    return (options: ApiQueryOptions): MethodDecorator => {
+    return (options: OpenAPIParameter): MethodDecorator => {
       return () => {};
     };
   }

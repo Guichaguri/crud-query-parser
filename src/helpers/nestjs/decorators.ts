@@ -15,17 +15,12 @@ export function Crud(parserContract: RequestParser | Type<RequestParser>): Metho
   if (!parser) {
     throw new Error('The request parser passed to @Crud() is invalid');
   }
-  // TODO add description
+
+  const openApi = parser.getOpenAPIParameters().map(param => ApiQuery(param));
 
   return applyDecorators(
     SetMetadata(CRUD_QUERY_PARSER, parser),
-    ApiQuery({ name: 's', type: 'string' }),
-    ApiQuery({ name: 'fields', type: 'string', isArray: true }),
-    ApiQuery({ name: 'sort', type: 'string', isArray: true }),
-    ApiQuery({ name: 'join', type: 'string', isArray: true }),
-    ApiQuery({ name: 'limit', type: 'integer' }),
-    ApiQuery({ name: 'offset', type: 'integer' }),
-    ApiQuery({ name: 'page', type: 'integer' }),
+    ...openApi,
   );
 }
 

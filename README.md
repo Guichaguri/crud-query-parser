@@ -100,7 +100,7 @@ import { ensureCondition } from 'crud-query-parser/filters';
 
 crudRequest = ensureCondition(crudRequest, {
   field: ['isActive'],
-  operator: ParsedRequestWhereOperator.EQ,
+  operator: CrudRequestWhereOperator.EQ,
   value: true,
 });
 ```

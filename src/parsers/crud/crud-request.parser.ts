@@ -5,6 +5,7 @@ import {
   CrudRequestRelation,
   ParsedRequestSelect
 } from '../../models/crud-request';
+import { OpenAPIParameter } from '../../models/openapi-parameter';
 import { ParsedRequestWhereBuilder } from '../../utils/parsed-request-where.builder';
 import { parseCrudSearch } from './parseCrudSearch';
 import { isValid } from '../../utils/functions';
@@ -14,6 +15,74 @@ import { SCondition } from './types';
  * Parses a request based on the @nestjsx/crud format.
  */
 export class CrudRequestParser implements RequestParser {
+
+  public getOpenAPIParameters(): OpenAPIParameter[] {
+    const arraySchema = {
+      type: 'array',
+      items: {
+        type: 'string',
+      },
+    };
+
+    return [
+      {
+        name: 'fields',
+        description: 'Selects resource fields',
+        required: false,
+        schema: arraySchema,
+        style: 'form',
+        explode: false,
+      },
+      {
+        name: 's',
+        description: 'Search condition',
+        required: false,
+        schema: {
+          type: 'string',
+        },
+      },
+      {
+        name: 'sort',
+        description: 'Search condition',
+        required: false,
+        schema: arraySchema,
+        style: 'form',
+        explode: true,
+      },
+      {
+        name: 'join',
+        description: 'Relations',
+        required: false,
+        schema: arraySchema,
+        style: 'form',
+        explode: true,
+      },
+      {
+        name: 'limit',
+        description: 'Page limit',
+        required: false,
+        schema: {
+          type: 'integer',
+        },
+      },
+      {
+        name: 'offset',
+        description: 'Offset amount',
+        required: false,
+        schema: {
+          type: 'integer',
+        },
+      },
+      {
+        name: 'page',
+        description: 'Page number',
+        required: false,
+        schema: {
+          type: 'integer',
+        },
+      },
+    ];
+  }
 
   public parse(query: Record<string, RequestParamValue>): CrudRequest {
     const select: ParsedRequestSelect = [];
