@@ -6,7 +6,7 @@
   "author": "Guilherme Chaguri",
   "scripts": {
     "build": "tsup",
-    "prepublish": "npm run build"
+    "prepublishOnly": "npm run build"
   },
   "tsup": {
     "entry": [

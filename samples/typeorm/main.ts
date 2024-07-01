@@ -1,7 +1,7 @@
 import "reflect-metadata";
 import { AppDataSource } from './data-source';
 import { PostEntity } from './entities/post.entity';
-import { CrudRequestParser } from '@crud-query-parser/core/parsers/crud';
+import { CrudRequestParser } from '../../src/parsers/crud';
 import { TypeormQueryAdapter } from '../../src/adapters/typeorm';
 
 const parser = new CrudRequestParser();
