@@ -1,16 +1,18 @@
 import { Brackets, ObjectLiteral, SelectQueryBuilder, WhereExpressionBuilder } from 'typeorm';
+import { QueryBuilderContract } from '../../contracts/query-builder.contract';
 import {
-  QueryBuilderContract,
   ParsedRequest,
   ParsedRequestOrder,
   ParsedRequestRelation,
-  ParsedRequestSelect,
+  ParsedRequestSelect
+} from '../../models/parsed-request';
+import {
   ParsedRequestWhere,
   ParsedRequestWhereField,
-  ParsedRequestWhereOperator,
-  GetManyProxy,
-} from '@crud-query-parser/core';
-import { ensureArray, ensureFalsy } from './utils';
+  ParsedRequestWhereOperator
+} from '../../models/parsed-request-where';
+import { ensureArray, ensureFalsy } from '../../utils/functions';
+import { GetManyProxy } from '../../models/get-many.proxy';
 
 /**
  * Adapts queries to TypeORM query builder object
@@ -142,11 +144,11 @@ export class TypeormQueryBuilder implements QueryBuilderContract<SelectQueryBuil
 
     if (where.or && where.or.length > 0) {
       addWhere(new Brackets(
-        wqb => where.or.forEach(item => this.adaptWhere(wqb, item, true, params))
+        wqb => where.or!.forEach(item => this.adaptWhere(wqb, item, true, params))
       ));
     } else if (where.and && where.and.length > 0) {
       addWhere(new Brackets(
-        wqb => where.and.forEach(item => this.adaptWhere(wqb, item, false, params))
+        wqb => where.and!.forEach(item => this.adaptWhere(wqb, item, false, params))
       ));
     } else if (where.field) {
       const param = this.createParam(params, where.field);

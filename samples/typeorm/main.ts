@@ -2,7 +2,7 @@ import "reflect-metadata";
 import { AppDataSource } from './data-source';
 import { PostEntity } from './entities/post.entity';
 import { CrudRequestParser } from '@crud-query-parser/core/parsers/crud';
-import { TypeormQueryBuilder } from '../src/typeorm.query-builder';
+import { TypeormQueryBuilder } from '../../src/adapters/typeorm';
 
 const parser = new CrudRequestParser();
 const queryBuilder = new TypeormQueryBuilder();
@@ -18,8 +18,6 @@ async function run() {
   qs['limit'] = '5';
 
   const request = parser.parse(qs);
-
-  ensureCondition()
 
   const data = await queryBuilder.getMany<PostEntity>(repository.createQueryBuilder(), request);
 
