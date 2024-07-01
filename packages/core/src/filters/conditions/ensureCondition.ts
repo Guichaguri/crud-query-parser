@@ -8,6 +8,19 @@ import { ParsedRequestWhere } from '../../models/parsed-request-where';
  * @param condition The condition that needs to be applied
  */
 export function ensureCondition(request: ParsedRequest, condition: ParsedRequestWhere): ParsedRequest {
+  // If there is already an "AND" condition, we'll just append to that
+  if (request.where.and) {
+    return {
+      ...request,
+      where: {
+        and: [
+          ...request.where.and,
+          condition,
+        ]
+      }
+    }
+  }
+
   return {
     ...request,
     where: {
