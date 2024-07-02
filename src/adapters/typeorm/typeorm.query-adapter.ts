@@ -3,13 +3,26 @@ import { QueryAdapter } from '../../models/query-adapter';
 import { CrudRequest, CrudRequestOrder, CrudRequestRelation, ParsedRequestSelect } from '../../models/crud-request';
 import { CrudRequestWhere, CrudRequestWhereField, CrudRequestWhereOperator } from '../../models/crud-request-where';
 import { GetManyResult } from '../../models/get-many-result';
-import { ensureArray, ensureFalsy } from '../../utils/functions';
+import { ensureArray, ensureFalsy, isValid } from '../../utils/functions';
 import { pathHasBase } from '../../utils/field-path';
+
+export interface TypeOrmQueryAdapterOptions {
+  /**
+   * Whether it will use ILIKE for case-insensitive operations.
+   *
+   * If undefined, it will be enabled by default for postgres and aurora-postgres databases
+   */
+  ilike?: boolean;
+}
 
 /**
  * Adapts queries to TypeORM query builder object
  */
-export class TypeormQueryAdapter implements QueryAdapter<SelectQueryBuilder<any>, ObjectLiteral> {
+export class TypeOrmQueryAdapter implements QueryAdapter<SelectQueryBuilder<any>, ObjectLiteral> {
+
+  constructor(
+    private readonly options: TypeOrmQueryAdapterOptions = {},
+  ) {}
 
   /**
    * @inheritDoc
@@ -65,10 +78,11 @@ export class TypeormQueryAdapter implements QueryAdapter<SelectQueryBuilder<any>
    */
   protected createBaseQuery<E extends ObjectLiteral>(qb: SelectQueryBuilder<E>, query: CrudRequest): SelectQueryBuilder<E> {
     const paramsDefined: string[] = [];
+    const isILikeEnabled = this.isILikeEnabled(qb);
 
     this.adaptSelect(qb, query.select);
     this.adaptRelations(qb, query.relations, query.select);
-    this.adaptWhere(qb.alias, qb, query.where, false, paramsDefined);
+    this.adaptWhere(qb.alias, qb, query.where, false, paramsDefined, isILikeEnabled);
     this.adaptOrder(qb, query.order);
 
     return qb;
@@ -145,21 +159,29 @@ export class TypeormQueryAdapter implements QueryAdapter<SelectQueryBuilder<any>
    * @param where The quere condition
    * @param or Whether this where condition is AND/OR
    * @param params The registered parameter name list
+   * @param isILikeEnabled Whether the ILIKE operator can be used
    */
-  protected adaptWhere(alias: string, qb: WhereExpressionBuilder, where: CrudRequestWhere, or: boolean, params: string[]): void {
+  protected adaptWhere(
+    alias: string,
+    qb: WhereExpressionBuilder,
+    where: CrudRequestWhere,
+    or: boolean,
+    params: string[],
+    isILikeEnabled: boolean,
+  ): void {
     const addWhere = (or ? qb.orWhere : qb.andWhere).bind(qb);
 
     if (where.or && where.or.length > 0) {
       addWhere(new Brackets(
-        wqb => where.or!.forEach(item => this.adaptWhere(alias, wqb, item, true, params))
+        wqb => where.or!.forEach(item => this.adaptWhere(alias, wqb, item, true, params, isILikeEnabled))
       ));
     } else if (where.and && where.and.length > 0) {
       addWhere(new Brackets(
-        wqb => where.and!.forEach(item => this.adaptWhere(alias, wqb, item, false, params))
+        wqb => where.and!.forEach(item => this.adaptWhere(alias, wqb, item, false, params, isILikeEnabled))
       ));
     } else if (where.field) {
       const param = this.createParam(params, where.field);
-      const query = this.mapWhereOperators(alias, where as CrudRequestWhereField, param);
+      const query = this.mapWhereOperators(alias, where as CrudRequestWhereField, param, isILikeEnabled);
 
       addWhere(query.where, query.params);
     }
@@ -191,8 +213,14 @@ export class TypeormQueryAdapter implements QueryAdapter<SelectQueryBuilder<any>
    * @param alias The query builder alias
    * @param where The where condition
    * @param param The parameter name
+   * @param isILikeEnabled Whether the ILIKE operator can be used
    */
-  protected mapWhereOperators(alias: string, where: CrudRequestWhereField, param: string): { where: string, params: ObjectLiteral } {
+  protected mapWhereOperators(
+    alias: string,
+    where: CrudRequestWhereField,
+    param: string,
+    isILikeEnabled: boolean,
+  ): { where: string, params: ObjectLiteral } {
     const field = [alias, ...where.field].join('.');
     const operator = where.operator;
     let value: unknown = where.value;
@@ -263,30 +291,47 @@ export class TypeormQueryAdapter implements QueryAdapter<SelectQueryBuilder<any>
         return { where: `LOWER(${field}) != :${param}`, params: { [param]: value } };
 
       case CrudRequestWhereOperator.STARTS_LOWER:
-        return { where: `LOWER(${field}) LIKE :${param}`, params: { [param]: `${value}%` } };
+        return { where: `${this.createLowerLike(isILikeEnabled, field)} :${param}`, params: { [param]: `${value}%` } };
 
       case CrudRequestWhereOperator.ENDS_LOWER:
-        return { where: `LOWER(${field}) LIKE :${param}`, params: { [param]: `%${value}` } };
+        return { where: `${this.createLowerLike(isILikeEnabled, field)} :${param}`, params: { [param]: `%${value}` } };
 
       case CrudRequestWhereOperator.CONTAINS_LOWER:
-        return { where: `${field} LIKE :${param}`, params: { [param]: `%${value}%` } };
+        return { where: `${this.createLowerLike(isILikeEnabled, field)} :${param}`, params: { [param]: `%${value}%` } };
 
       case CrudRequestWhereOperator.NOT_CONTAINS_LOWER:
-        return { where: `${field} NOT LIKE :${param}`, params: { [param]: `%${value}%` } };
+        return { where: `${this.createLowerLike(isILikeEnabled, field, true)} :${param}`, params: { [param]: `%${value}%` } };
 
       case CrudRequestWhereOperator.IN_LOWER:
         ensureArray('IN operator', value, 1);
 
-        return { where: `${field} IN (...:${param})`, params: { [param]: value } };
+        return { where: `LOWER(${field}) IN (...:${param})`, params: { [param]: value } };
 
       case CrudRequestWhereOperator.NOT_IN_LOWER:
         ensureArray('NOT IN operator', value, 1);
 
-        return { where: `${field} NOT IN (...:${param})`, params: { [param]: value } };
+        return { where: `LOWER(${field}) NOT IN (...:${param})`, params: { [param]: value } };
 
       default:
         throw new Error(`Unknown operator "${operator}"`);
     }
+  }
+
+  protected createLowerLike(isILikeEnabled: boolean, field: string, not: boolean = false): string {
+    if (isILikeEnabled)
+      return not ? `${field} NOT ILIKE` : `${field} ILIKE`;
+
+    return not ? `LOWER(${field}) NOT LIKE` : `LOWER(${field}) LIKE`;
+  }
+
+  protected isILikeEnabled(qb: SelectQueryBuilder<any>): boolean {
+    const ilikeEnabled = this.options.ilike;
+
+    if (isValid(ilikeEnabled))
+      return ilikeEnabled;
+
+    const type = qb.connection.options.type;
+    return type === 'postgres' || type === 'aurora-postgres';
   }
 
 }

@@ -2,11 +2,11 @@ import "reflect-metadata";
 import { AppDataSource } from './data-source';
 import { PostEntity } from './entities/post.entity';
 import { CrudRequestParser } from '../../src/parsers/crud';
-import { TypeormQueryAdapter } from '../../src/adapters/typeorm';
+import { TypeOrmQueryAdapter } from '../../src/adapters/typeorm';
 import { CategoryEntity } from './entities/category.entity';
 
 const parser = new CrudRequestParser();
-const queryBuilder = new TypeormQueryAdapter();
+const queryBuilder = new TypeOrmQueryAdapter();
 
 const repository = AppDataSource.getRepository(PostEntity);
 
@@ -37,7 +37,7 @@ async function run() {
 
   const qs: Record<string, string> = {};
 
-  qs['s'] = JSON.stringify({ isActive: true });
+  qs['s'] = JSON.stringify({ title: { $contL: 'hello' }, isActive: true });
   qs['fields'] = 'id,title';
   qs['join'] = 'category';
   qs['limit'] = '5';
