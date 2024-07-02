@@ -137,12 +137,7 @@ function parseCrudSearchField(builder: CrudRequestWhereBuilder, name: string[], 
     if (!operatorMap[key])
       continue;
 
-    const value = field[key];
-
-    if (Array.isArray(value))
-      value.forEach(val => builder.addField(name, operatorMap[key], val));
-    else
-      builder.addField(name, operatorMap[key], value);
+    builder.addField(name, operatorMap[key], field[key]);
   }
 
   if (field.$or) {

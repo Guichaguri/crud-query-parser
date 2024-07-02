@@ -6,6 +6,7 @@ import {
   CrudRequestWhereOR,
   CrudRequestWhereValueType
 } from '../models/crud-request-where';
+import { validateWhereField } from './where';
 
 /**
  * A helper class that makes it easier to create a CrudRequestWhere
@@ -56,12 +57,18 @@ export class CrudRequestWhereBuilder {
    * @param operator The comparison operator
    * @param value The value to compare
    */
-  public addField(field: string[], operator: CrudRequestWhereOperator, value: CrudRequestWhereValueType): CrudRequestWhereBuilder {
+  public addField(
+    field: string[],
+    operator: CrudRequestWhereOperator,
+    value: CrudRequestWhereValueType | CrudRequestWhereValueType[],
+  ): CrudRequestWhereBuilder {
     const whereField: CrudRequestWhereField = {
       field,
       operator,
       value,
     };
+
+    validateWhereField(whereField);
 
     if (this.where.and) {
       this.where.and.push(whereField);

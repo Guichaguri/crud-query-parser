@@ -15,6 +15,19 @@ import { CrudRequestFields } from '../models/crud-request';
   obj[parts.shift()] = value;
 }*/
 
+export function ensurePrimitive(fieldName: string, data: any) {
+  if (data === null || data === undefined)
+    return;
+
+  if (typeof data === 'number' || typeof data === 'string' || typeof data === 'boolean')
+    return;
+
+  if (data instanceof Date)
+    return;
+
+  throw new Error(`${fieldName} must be a string, number, boolean or null`);
+}
+
 export function ensureArray<T>(fieldName: string, data: T[] | any, minLength: number = 0): T[] {
   if (!Array.isArray(data) || data.length < minLength)
     throw new Error(`${fieldName} must be an array with at least ${minLength} items`);
@@ -27,6 +40,6 @@ export function ensureFalsy(fieldName: string, data: any) {
     throw new Error(`${fieldName} must be null`);
 }
 
-export function isValid(value: any): value is object {
+export function isValid<T>(value: T | undefined | null): value is T {
   return value !== null && value !== undefined;
 }
