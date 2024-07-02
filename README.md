@@ -5,13 +5,8 @@ This library parses HTTP requests and converts them to TypeORM query builders, a
 ## Install
 
 ```sh
-npm install @crud-query-parser/core
+npm install crud-query-parser
 ```
-
-### Other modules
-
-- `@crud-query-parser/typeorm`: TypeORM adapter
-- `@crud-query-parser/nestjs`: NestJS utilities
 
 ## Usage
 
@@ -40,12 +35,15 @@ console.log(result);
 
 ### CRUD
 
-This parser fully compatible with `@nestjsx/crud`
+The CRUD parser is an implementation of the `@nestjsx/crud` [query params format](https://github.com/nestjsx/crud/wiki/Requests#query-params).
 
 ```ts
 import { CrudRequestParser } from 'crud-query-parser/parsers/crud';
 
 const parser = new CrudRequestParser();
+
+// Then, you have to pass a query string object to it
+// const crudRequest = parser.parse(request.query);
 ```
 
 ## Database adapters
@@ -59,7 +57,8 @@ import { TypeormQueryAdapter } from 'crud-query-parser/adapters/typeorm';
 
 const adapter = new TypeormQueryAdapter();
 
-// 
+// Then, you can pass a query builder to it:
+// const result = adapter.getMany(repository.createQueryBuilder(), crudRequest);
 ```
 
 ## Helpers
@@ -74,10 +73,32 @@ Sample code:
 @Controller('users')
 export class UserController {
 
+  constructor(
+    private service: UserService,
+  ) {}
+
   @Get()
-  @Crud(CrudRequestParser)
-  public async getMany(@ParseCrudRequest() crudRequest: CrudRequest) {
+  @Crud(CrudRequestParser) // <- You specify which parser to use
+  public async getMany(@ParseCrudRequest() crudRequest: CrudRequest) { // <- The request query will be automatically parsed
     return this.service.getMany(crudRequest);
+  }
+
+}
+```
+
+```ts
+@Injectable()
+export class UserService {
+
+  protected crudAdapter = new TypeormQueryAdapter();
+
+  constructor(
+    @InjectRepository(UserEntity)
+    private repository: Repository<UserEntity>,
+  ) {}
+  
+  public async getMany(crudRequest: CrudRequest) {
+    return await this.crudAdapter.getMany(this.repository.createQueryBuilder(), crudRequest);
   }
 
 }
