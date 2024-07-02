@@ -3,6 +3,36 @@ import { CrudRequestWhereOperator } from '../../models/crud-request-where';
 import { SCondition, SField, SFieldOperator, SFields } from './types';
 import { isValid } from '../../utils/functions';
 
+type OperatorType = Exclude<Exclude<keyof SFieldOperator, '$or'>, '$and'>;
+
+// Operator
+// { field: { $gte: 10 } }
+const operatorMap: Record<OperatorType, CrudRequestWhereOperator> = {
+  $eq: CrudRequestWhereOperator.EQ,
+  $ne: CrudRequestWhereOperator.NEQ,
+  $gt: CrudRequestWhereOperator.GT,
+  $lt: CrudRequestWhereOperator.LT,
+  $gte: CrudRequestWhereOperator.GTE,
+  $lte: CrudRequestWhereOperator.LTE,
+  $starts: CrudRequestWhereOperator.STARTS,
+  $ends: CrudRequestWhereOperator.ENDS,
+  $cont: CrudRequestWhereOperator.CONTAINS,
+  $excl: CrudRequestWhereOperator.NOT_CONTAINS,
+  $in: CrudRequestWhereOperator.IN,
+  $notin: CrudRequestWhereOperator.NOT_IN,
+  $between: CrudRequestWhereOperator.BETWEEN,
+  $isnull: CrudRequestWhereOperator.IS_NULL,
+  $notnull: CrudRequestWhereOperator.NOT_NULL,
+  $eqL: CrudRequestWhereOperator.EQ_LOWER,
+  $neL: CrudRequestWhereOperator.NEQ_LOWER,
+  $startsL: CrudRequestWhereOperator.STARTS_LOWER,
+  $endsL: CrudRequestWhereOperator.ENDS_LOWER,
+  $contL: CrudRequestWhereOperator.CONTAINS_LOWER,
+  $exclL: CrudRequestWhereOperator.NOT_CONTAINS_LOWER,
+  $inL: CrudRequestWhereOperator.IN_LOWER,
+  $notinL: CrudRequestWhereOperator.NOT_IN_LOWER,
+};
+
 /**
  * Parses a crud request condition and inserts into a CrudRequestWhereBuilder
  *
@@ -101,36 +131,6 @@ function parseCrudSearchField(builder: CrudRequestWhereBuilder, name: string[], 
     return;
   }
 
-  type OperatorType = Exclude<Exclude<keyof SFieldOperator, '$or'>, '$and'>;
-
-  // Operator
-  // { field: { $gte: 10 } }
-  const operatorMap: Record<OperatorType, CrudRequestWhereOperator> = {
-    $eq: CrudRequestWhereOperator.EQ,
-    $ne: CrudRequestWhereOperator.NEQ,
-    $gt: CrudRequestWhereOperator.GT,
-    $lt: CrudRequestWhereOperator.LT,
-    $gte: CrudRequestWhereOperator.GTE,
-    $lte: CrudRequestWhereOperator.LTE,
-    $starts: CrudRequestWhereOperator.STARTS,
-    $ends: CrudRequestWhereOperator.ENDS,
-    $cont: CrudRequestWhereOperator.CONTAINS,
-    $excl: CrudRequestWhereOperator.NOT_CONTAINS,
-    $in: CrudRequestWhereOperator.IN,
-    $notin: CrudRequestWhereOperator.NOT_IN,
-    $between: CrudRequestWhereOperator.BETWEEN,
-    $isnull: CrudRequestWhereOperator.IS_NULL,
-    $notnull: CrudRequestWhereOperator.NOT_NULL,
-    $eqL: CrudRequestWhereOperator.EQ_LOWER,
-    $neL: CrudRequestWhereOperator.NEQ_LOWER,
-    $startsL: CrudRequestWhereOperator.STARTS_LOWER,
-    $endsL: CrudRequestWhereOperator.ENDS_LOWER,
-    $contL: CrudRequestWhereOperator.CONTAINS_LOWER,
-    $exclL: CrudRequestWhereOperator.NOT_CONTAINS_LOWER,
-    $inL: CrudRequestWhereOperator.IN_LOWER,
-    $notinL: CrudRequestWhereOperator.NOT_IN_LOWER,
-  };
-
   const keys = Object.keys(field) as OperatorType[];
 
   for (let key of keys) {
@@ -147,5 +147,45 @@ function parseCrudSearchField(builder: CrudRequestWhereBuilder, name: string[], 
 
   if (field.$or) {
     parseCrudSearchField(builder.addOr(), name, field.$or);
+  }
+}
+
+export function parseCrudFilters(builder: CrudRequestWhereBuilder, andFilters: string[], orFilters: string[]): void {
+  // Based on rules from https://github.com/nestjsx/crud/wiki/Requests#or
+  // "If present both or and filter in any amount (one or miltiple each) then both interpreted
+  // as a combitation of AND conditions and compared with each other by OR condition"
+  // "If there are one or and one filter then it will be interpreted as OR condition"
+  if (andFilters.length > 0 && orFilters.length > 0) {
+    const or = builder.addOr();
+
+    parseCrudFilter(or.addAnd(), andFilters);
+    parseCrudFilter(or.addAnd(), orFilters);
+
+    return;
+  }
+
+  // "If there are multiple or present (without filter) then it will be interpreted as a compination of OR conditions"
+  if (orFilters.length > 0) {
+    parseCrudFilter(builder.addOr(), orFilters);
+
+    return;
+  }
+
+  if (andFilters.length > 0) {
+    parseCrudFilter(builder.addAnd(), andFilters);
+
+    return;
+  }
+}
+
+function parseCrudFilter(builder: CrudRequestWhereBuilder, rawFilters: string[]): void {
+  for (const rawFilter of rawFilters) {
+    const [name, op, value] = rawFilter.split('||', 3);
+    const operator = operatorMap[op as OperatorType];
+
+    if (!operator)
+      continue;
+
+    builder.addField(name.split('.'), operator, value);
   }
 }

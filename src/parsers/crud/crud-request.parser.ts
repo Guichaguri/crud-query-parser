@@ -1,13 +1,8 @@
 import { RequestParamValue, RequestParser } from '../../models/request-parser';
-import {
-  CrudRequest,
-  CrudRequestOrder,
-  CrudRequestRelation,
-  ParsedRequestSelect
-} from '../../models/crud-request';
+import { CrudRequest, CrudRequestOrder, CrudRequestRelation, ParsedRequestSelect } from '../../models/crud-request';
 import { OpenAPIParameter } from '../../models/openapi-parameter';
 import { CrudRequestWhereBuilder } from '../../utils/crud-request-where.builder';
-import { parseCrudSearch } from './parseCrudSearch';
+import { parseCrudFilters, parseCrudSearch } from './parseCrudSearch';
 import { isValid } from '../../utils/functions';
 import { SCondition } from './types';
 
@@ -95,9 +90,9 @@ export class CrudRequestParser implements RequestParser {
     this.parseSelect(select, query['fields'] || query['select']);
     this.parseJoin(select, relations, query['join']);
     this.parseOrder(ordering, query['sort']);
-    this.parseSearch(where, query['s']);
+    this.parseSearch(where, query['s'], query['filter'], query['or']);
 
-    const { limit, offset } = this.parseLimits(query['limit'], query['offset'], query['page']);
+    const { limit, offset } = this.parseLimits(query['limit'] || query['per_page'], query['offset'], query['page']);
 
     return {
       select,
@@ -194,16 +189,32 @@ export class CrudRequestParser implements RequestParser {
     return { limit, offset };
   }
 
-  protected parseSearch(builder: CrudRequestWhereBuilder, rawSearch: RequestParamValue): void {
+  protected parseSearch(builder: CrudRequestWhereBuilder, rawSearch: RequestParamValue, rawFilter: RequestParamValue, rawOr: RequestParamValue): void {
     if (Array.isArray(rawSearch))
       rawSearch = rawSearch.length > 0 ? rawSearch[0] : undefined;
 
-    if (!rawSearch)
+    if (!rawSearch) {
+      // In case the search is not defined, we'll read the filter and or parameters
+      this.parseFilter(builder, rawFilter, rawOr);
       return;
+    }
 
     const search: SCondition = JSON.parse(rawSearch);
 
     parseCrudSearch(builder, search);
+  }
+
+  protected parseFilter(builder: CrudRequestWhereBuilder, rawFilter: RequestParamValue, rawOr: RequestParamValue): void {
+    let andFilters: string[] = [];
+    let orFilters: string[] = [];
+
+    if (rawFilter)
+      andFilters = Array.isArray(rawFilter) ? rawFilter : [rawFilter];
+
+    if (rawOr)
+      orFilters = Array.isArray(rawOr) ? rawOr : [rawOr];
+
+    parseCrudFilters(builder, andFilters, orFilters);
   }
 
 }
