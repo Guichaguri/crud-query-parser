@@ -115,7 +115,7 @@ There are a few filters provided by the library, which are listed below.
 This filter will add the condition on top of all other where conditions
 
 ```ts
-import { ensureCondition } from 'crud-query-parser/filters';
+import { ensureCondition, ensureEqCondition } from 'crud-query-parser/filters';
 
 // ...
 
@@ -123,6 +123,11 @@ crudRequest = ensureCondition(crudRequest, {
   field: ['isActive'],
   operator: CrudRequestWhereOperator.EQ,
   value: true,
+});
+
+// Alternatively, a shorthand for equals conditions:
+crudRequest = ensureEqCondition(crudRequest, {
+  isActive: true,
 });
 ```
 
