@@ -48,13 +48,14 @@ export class TypeOrmQueryAdapter implements QueryAdapter<SelectQueryBuilder<any>
    * @inheritDoc
    */
   public async getMany<E extends ObjectLiteral>(qb: SelectQueryBuilder<E | any>, request: CrudRequest): Promise<GetManyResult<E>> {
+    const offset = request.offset ?? (request.page && request.limit ? request.limit * request.page : 0);
+
     const fullQuery = this.createBaseQuery(qb, request);
-    const paginatedQuery = this.paginateQuery(fullQuery.clone(), request);
+    const paginatedQuery = this.paginateQuery(fullQuery.clone(), request, offset);
 
     const data = await paginatedQuery.getMany();
     const total = await fullQuery.getCount();
 
-    const offset = request.offset ?? 0;
     const limit = request.limit ?? total;
 
     const count = data.length;
@@ -93,9 +94,10 @@ export class TypeOrmQueryAdapter implements QueryAdapter<SelectQueryBuilder<any>
    *
    * @param qb The query builder
    * @param query The parsed query
+   * @param offset The parsed query offset
    */
-  protected paginateQuery<E extends ObjectLiteral>(qb: SelectQueryBuilder<E>, query: CrudRequest): SelectQueryBuilder<E> {
-    return qb.limit(query.limit).offset(query.offset);
+  protected paginateQuery<E extends ObjectLiteral>(qb: SelectQueryBuilder<E>, query: CrudRequest, offset?: number): SelectQueryBuilder<E> {
+    return qb.limit(query.limit).offset(offset);
   }
 
   /**

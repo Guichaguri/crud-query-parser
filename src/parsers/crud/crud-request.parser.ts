@@ -8,11 +8,6 @@ import { SCondition } from './types';
 
 export interface CrudRequestParserOptions {
   /**
-   * The default limit, should be set in order for the `page` parameter to work properly.
-   */
-  defaultLimit?: number,
-
-  /**
    * Whether the `fields` and `select` parameters will be disabled
    */
   disableSelect?: boolean;
@@ -54,6 +49,8 @@ export class CrudRequestParser implements RequestParser {
   }
 
   public getOpenAPIParameters(): OpenAPIParameter[] {
+    // We'll not add the `per_page`, `filter`, `or` and `select` parameters here
+    // as those are only kept for compatibility purposes and not recommended.
     // TODO improve docs
 
     const arraySchema = {
@@ -159,7 +156,9 @@ export class CrudRequestParser implements RequestParser {
     if (!this.options.disableWhere)
       this.parseSearch(where, query['s'], query['filter'], query['or']);
 
-    const { limit, offset } = this.parseLimits(query['limit'] || query['per_page'], query['offset'], query['page']);
+    const limit = this.options.disableLimit ? undefined : this.parseNumber(query['limit'] || query['per_page']);
+    const offset = this.options.disableOffset ? undefined : this.parseNumber(query['offset']);
+    const page = this.options.disableOffset ? undefined : this.parseNumber(query['page']);
 
     return {
       select,
@@ -168,6 +167,7 @@ export class CrudRequestParser implements RequestParser {
       where: where.build(),
       limit,
       offset,
+      page,
     };
   }
 
@@ -240,23 +240,6 @@ export class CrudRequestParser implements RequestParser {
     const num = +raw;
 
     return isNaN(num) ? undefined : num;
-  }
-
-  protected parseLimits(rawLimit: RequestParamValue, rawOffset: RequestParamValue, rawPage: RequestParamValue) {
-    let limit = this.options.disableLimit ? undefined : this.parseNumber(rawLimit);
-    let offset = this.options.disableOffset ? undefined : this.parseNumber(rawOffset);
-
-    if (!limit)
-      limit = this.options.defaultLimit;
-
-    if (limit && !offset) {
-      const page = this.parseNumber(rawPage);
-
-      if (page)
-        offset = limit * page;
-    }
-
-    return { limit, offset };
   }
 
   protected parseSearch(builder: CrudRequestWhereBuilder, rawSearch: RequestParamValue, rawFilter: RequestParamValue, rawOr: RequestParamValue): void {

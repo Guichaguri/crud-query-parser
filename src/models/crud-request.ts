@@ -29,4 +29,6 @@ export interface CrudRequest {
 
   offset?: number;
 
+  page?: number;
+
 }
