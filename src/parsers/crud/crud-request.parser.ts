@@ -6,10 +6,52 @@ import { parseCrudFilters, parseCrudSearch } from './parseCrudSearch';
 import { isValid } from '../../utils/functions';
 import { SCondition } from './types';
 
+export interface CrudRequestParserOptions {
+  /**
+   * The default limit, should be set in order for the `page` parameter to work properly.
+   */
+  defaultLimit?: number,
+
+  /**
+   * Whether the `fields` and `select` parameters will be disabled
+   */
+  disableSelect?: boolean;
+
+  /**
+   * Whether the `s`, `filter` and `or` parameters will be disabled
+   */
+  disableWhere?: boolean;
+
+  /**
+   * Whether the `sort` parameter will be disabled
+   */
+  disableOrder?: boolean;
+
+  /**
+   * Whether the `join` parameter will be disabled
+   */
+  disableRelations?: boolean;
+
+  /**
+   * Whether the `limit` and `per_page` parameters will be disabled
+   */
+  disableLimit?: boolean;
+
+  /**
+   * Whether the `offset` and `page` parameters will be disabled
+   */
+  disableOffset?: boolean;
+}
+
 /**
  * Parses a request based on the @nestjsx/crud format.
  */
 export class CrudRequestParser implements RequestParser {
+
+  constructor(
+    protected readonly options: CrudRequestParserOptions = {},
+  ) {
+  }
 
   public getOpenAPIParameters(): OpenAPIParameter[] {
     // TODO improve docs
@@ -21,64 +63,82 @@ export class CrudRequestParser implements RequestParser {
       },
     };
 
-    return [
-      {
+    const params: OpenAPIParameter[] = [];
+
+    if (!this.options.disableSelect) {
+      params.push({
         name: 'fields',
         description: 'Selects resource fields',
         required: false,
         schema: arraySchema,
         style: 'form',
         explode: false,
-      },
-      {
+      });
+    }
+
+    if (!this.options.disableWhere) {
+      params.push({
         name: 's',
         description: 'Search condition',
         required: false,
         schema: {
           type: 'string',
         },
-      },
-      {
+      });
+    }
+
+    if (!this.options.disableOrder) {
+      params.push({
         name: 'sort',
         description: 'Sorting',
         required: false,
         schema: arraySchema,
         style: 'form',
         explode: true,
-      },
-      {
+      });
+    }
+
+    if (!this.options.disableRelations) {
+      params.push({
         name: 'join',
         description: 'Relations',
         required: false,
         schema: arraySchema,
         style: 'form',
         explode: true,
-      },
-      {
+      });
+    }
+
+    if (!this.options.disableLimit) {
+      params.push({
         name: 'limit',
         description: 'Page limit',
         required: false,
         schema: {
           type: 'integer',
         },
-      },
-      {
+      });
+    }
+
+    if (!this.options.disableOffset) {
+      params.push({
         name: 'offset',
         description: 'Offset amount',
         required: false,
         schema: {
           type: 'integer',
         },
-      },
-      {
+      }, {
         name: 'page',
         description: 'Page number',
         required: false,
         schema: {
           type: 'integer',
         },
-      },
-    ];
+      });
+    }
+
+    return params;
   }
 
   public parse(query: Record<string, RequestParamValue>): CrudRequest {
@@ -87,10 +147,17 @@ export class CrudRequestParser implements RequestParser {
     const ordering: CrudRequestOrder[] = [];
     const where = new CrudRequestWhereBuilder();
 
-    this.parseSelect(select, query['fields'] || query['select']);
-    this.parseJoin(select, relations, query['join']);
-    this.parseOrder(ordering, query['sort']);
-    this.parseSearch(where, query['s'], query['filter'], query['or']);
+    if (!this.options.disableSelect)
+      this.parseSelect(select, query['fields'] || query['select']);
+
+    if (!this.options.disableRelations)
+      this.parseJoin(select, relations, query['join']);
+
+    if (!this.options.disableOrder)
+      this.parseOrder(ordering, query['sort']);
+
+    if (!this.options.disableWhere)
+      this.parseSearch(where, query['s'], query['filter'], query['or']);
 
     const { limit, offset } = this.parseLimits(query['limit'] || query['per_page'], query['offset'], query['page']);
 
@@ -176,8 +243,11 @@ export class CrudRequestParser implements RequestParser {
   }
 
   protected parseLimits(rawLimit: RequestParamValue, rawOffset: RequestParamValue, rawPage: RequestParamValue) {
-    const limit = this.parseNumber(rawLimit);
-    let offset = this.parseNumber(rawOffset);
+    let limit = this.options.disableLimit ? undefined : this.parseNumber(rawLimit);
+    let offset = this.options.disableOffset ? undefined : this.parseNumber(rawOffset);
+
+    if (!limit)
+      limit = this.options.defaultLimit;
 
     if (limit && !offset) {
       const page = this.parseNumber(rawPage);
