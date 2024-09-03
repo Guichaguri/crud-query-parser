@@ -43,3 +43,7 @@ export function ensureFalsy(fieldName: string, data: any) {
 export function isValid<T>(value: T | undefined | null): value is T {
   return value !== null && value !== undefined;
 }
+
+export function getOffset(offset: number | undefined, limit?: number, page?: number): number {
+  return offset ?? (limit && page ? limit * page : 0);
+}

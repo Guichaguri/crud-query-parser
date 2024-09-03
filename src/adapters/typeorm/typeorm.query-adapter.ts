@@ -3,7 +3,7 @@ import { QueryAdapter } from '../../models/query-adapter';
 import { CrudRequest, CrudRequestOrder, CrudRequestRelation, ParsedRequestSelect } from '../../models/crud-request';
 import { CrudRequestWhere, CrudRequestWhereField, CrudRequestWhereOperator } from '../../models/crud-request-where';
 import { GetManyResult } from '../../models/get-many-result';
-import { ensureArray, ensureFalsy, isValid } from '../../utils/functions';
+import { ensureArray, ensureFalsy, getOffset, isValid } from '../../utils/functions';
 import { pathHasBase } from '../../utils/field-path';
 
 export interface TypeOrmQueryAdapterOptions {
@@ -48,7 +48,7 @@ export class TypeOrmQueryAdapter implements QueryAdapter<SelectQueryBuilder<any>
    * @inheritDoc
    */
   public async getMany<E extends ObjectLiteral>(qb: SelectQueryBuilder<E | any>, request: CrudRequest): Promise<GetManyResult<E>> {
-    const offset = request.offset ?? (request.page && request.limit ? request.limit * request.page : 0);
+    const offset = getOffset(request.offset, request.limit, request.page);
 
     const fullQuery = this.createBaseQuery(qb, request);
     const paginatedQuery = this.paginateQuery(fullQuery.clone(), request, offset);
