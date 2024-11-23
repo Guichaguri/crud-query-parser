@@ -33,3 +33,28 @@ export function pathHasBase(path: string[], base: string[]): boolean {
 
   return base.every((start, i) => path[i] === start);
 }
+
+/**
+ * Breaks a path into the base part and the field name part
+ *
+ * @param path The full path
+ */
+export function pathGetBaseAndName(path: string[]): [string[], string] {
+  if (path.length === 0)
+    throw new Error('Cannot break an empty path');
+
+  const base = [...path];
+  const name = base.pop()!;
+
+  return [base, name];
+}
+
+
+/**
+ * Gets the last part of the path: the field name
+ *
+ * @param path The full path
+ */
+export function pathGetFieldName(path: string[]): string {
+  return path[path.length - 1];
+}

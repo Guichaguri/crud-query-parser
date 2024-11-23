@@ -6,7 +6,7 @@ import { CrudRequestWhere, CrudRequestWhereField, CrudRequestWhereOperator } fro
 import { GetManyResult } from '../../models/get-many-result';
 import { FieldPath } from '../../models/field-path';
 import { ensureArray, ensureEmpty, getOffset, isValid } from '../../utils/functions';
-import { pathHasBase } from '../../utils/field-path';
+import { pathEquals, pathGetBaseAndName, pathHasBase } from '../../utils/field-path';
 
 export interface TypeOrmQueryAdapterOptions {
   /**
@@ -122,12 +122,12 @@ export class TypeOrmQueryAdapter implements QueryAdapter<SelectQueryBuilder<any>
     const mainAlias = qb.expressionMap.mainAlias;
 
     if (!mainAlias)
-      throw new Error('No main alias found'); // TODO custom error
+      throw new Error('No main alias found in query builder');
 
     this.adaptSelect(qb, mainAlias, query.select);
     this.adaptRelations(qb, mainAlias, query.relations, query.select);
-    this.adaptWhere(mainAlias, qb, query.where, false, paramsDefined, isILikeEnabled);
-    this.adaptOrder(qb, mainAlias, query.order);
+    this.adaptWhere(mainAlias, query.relations, qb, query.where, false, paramsDefined, isILikeEnabled);
+    this.adaptOrder(qb, mainAlias, query.relations, query.order);
 
     return qb;
   }
@@ -182,7 +182,7 @@ export class TypeOrmQueryAdapter implements QueryAdapter<SelectQueryBuilder<any>
   ): void {
     for (const relation of relations) {
       const path = [baseAlias.name, ...relation.field].join('.');
-      const alias = relation.alias || path.replace('.', '_');
+      const alias = relation.alias || [baseAlias.name, ...relation.field].join('_');
 
       const fields = select
         .filter(f => pathHasBase(f.field, relation.field))
@@ -202,18 +202,23 @@ export class TypeOrmQueryAdapter implements QueryAdapter<SelectQueryBuilder<any>
    *
    * @param qb The query builder
    * @param alias The base alias
+   * @param relations The list of relations
    * @param ordering The parsed ordering
    */
   protected adaptOrder<E extends ObjectLiteral>(
     qb: SelectQueryBuilder<E>,
     alias: Alias,
+    relations: CrudRequestRelation[],
     ordering: CrudRequestOrder[],
   ): void {
     for (const order of ordering) {
       if (!this.validateField(alias, order.field, 'order'))
         continue;
 
-      const path = [alias.name, ...order.field].join('.');
+      const [fieldBase, fieldName] = pathGetBaseAndName(order.field);
+      const aliasName = this.getFieldAlias(alias, relations, fieldBase);
+
+      const path = aliasName + '.' + fieldName;
 
       qb.addOrderBy(path, order.order);
     }
@@ -223,6 +228,7 @@ export class TypeOrmQueryAdapter implements QueryAdapter<SelectQueryBuilder<any>
    * Adapts a where condition
    *
    * @param alias The query builder alias
+   * @param relations The list of relations
    * @param qb The query builder
    * @param where The quere condition
    * @param or Whether this where condition is AND/OR
@@ -231,6 +237,7 @@ export class TypeOrmQueryAdapter implements QueryAdapter<SelectQueryBuilder<any>
    */
   protected adaptWhere(
     alias: Alias,
+    relations: CrudRequestRelation[],
     qb: WhereExpressionBuilder,
     where: CrudRequestWhere,
     or: boolean,
@@ -241,18 +248,18 @@ export class TypeOrmQueryAdapter implements QueryAdapter<SelectQueryBuilder<any>
 
     if (where.or && where.or.length > 0) {
       addWhere(new Brackets(
-        wqb => where.or!.forEach(item => this.adaptWhere(alias, wqb, item, true, params, isILikeEnabled))
+        wqb => where.or!.forEach(item => this.adaptWhere(alias, relations, wqb, item, true, params, isILikeEnabled))
       ));
     } else if (where.and && where.and.length > 0) {
       addWhere(new Brackets(
-        wqb => where.and!.forEach(item => this.adaptWhere(alias, wqb, item, false, params, isILikeEnabled))
+        wqb => where.and!.forEach(item => this.adaptWhere(alias, relations, wqb, item, false, params, isILikeEnabled))
       ));
     } else if (where.field) {
       if (!this.validateField(alias, where.field, 'where'))
         return;
 
       const param = this.createParam(params, where.field);
-      const query = this.mapWhereOperators(alias, where as CrudRequestWhereField, param, isILikeEnabled);
+      const query = this.mapWhereOperators(alias, relations, where as CrudRequestWhereField, param, isILikeEnabled);
 
       addWhere(query.where, query.params);
     }
@@ -306,7 +313,7 @@ export class TypeOrmQueryAdapter implements QueryAdapter<SelectQueryBuilder<any>
       return true;
 
     if (rule === 'deny')
-      throw new Error(`${source} field ${path.join('.')} is invalid.`);
+      throw new Error(`${source} field "${path.join('.')}" is invalid.`);
 
     return false;
   }
@@ -332,7 +339,7 @@ export class TypeOrmQueryAdapter implements QueryAdapter<SelectQueryBuilder<any>
       if (!relation)
         return false;
 
-      metadata = relation.entityMetadata;
+      metadata = relation.inverseEntityMetadata;
     }
 
     const column = metadata.findColumnWithPropertyPathStrict(field);
@@ -344,17 +351,23 @@ export class TypeOrmQueryAdapter implements QueryAdapter<SelectQueryBuilder<any>
    * Maps where operators to a pseudo-SQL statement and a parameter map
    *
    * @param alias The query builder alias
+   * @param relations The list of relations
    * @param where The where condition
    * @param param The parameter name
    * @param isILikeEnabled Whether the ILIKE operator can be used
    */
   protected mapWhereOperators(
     alias: Alias,
+    relations: CrudRequestRelation[],
     where: CrudRequestWhereField,
     param: string,
     isILikeEnabled: boolean,
   ): { where: string, params: ObjectLiteral } {
-    const field = [alias.name, ...where.field].join('.');
+    const [pathBase, pathField] = pathGetBaseAndName(where.field);
+    const fieldAlias = this.getFieldAlias(alias, relations, pathBase);
+
+    const field = fieldAlias + '.' + pathField;
+
     const operator = where.operator;
     let value: unknown = where.value;
 
@@ -448,6 +461,25 @@ export class TypeOrmQueryAdapter implements QueryAdapter<SelectQueryBuilder<any>
       default:
         throw new Error(`Unknown operator "${operator}"`);
     }
+  }
+
+  /**
+   * Gets a field alias based on its base path
+   *
+   * @param alias The query main alias
+   * @param relations The relations
+   * @param base The base path
+   */
+  protected getFieldAlias(alias: Alias, relations: CrudRequestRelation[], base: string[]): string {
+    if (base.length === 0)
+      return alias.name;
+
+    const relation = relations.find(r => pathEquals(r.field, base));
+
+    if (relation && relation.alias)
+      return relation.alias;
+
+    return [alias.name, ...base].join('_');
   }
 
   /**
