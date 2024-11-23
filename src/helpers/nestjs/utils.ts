@@ -1,5 +1,6 @@
 import { ExecutionContext, Type } from '@nestjs/common';
 import { OpenAPIParameter } from '../../models/openapi-parameter';
+import { RequestParser } from '../../models/request-parser';
 
 export const ApiQuery = (() => {
   try {
@@ -11,7 +12,7 @@ export const ApiQuery = (() => {
   }
 })();
 
-export function createInstance<T>(data: T | Type<T> | undefined): T | undefined {
+export function createInstance<T extends RequestParser>(data: T | Type<T> | undefined): T | undefined {
   if (typeof data === 'function')
     return new data();
 

@@ -1,5 +1,5 @@
 import { CrudRequestWhereField, CrudRequestWhereOperator } from '../models/crud-request-where';
-import { ensureArray, ensureFalsy, ensurePrimitive } from './functions';
+import { ensureArray, ensureEmpty, ensurePrimitive } from './functions';
 
 export enum WhereOperatorValueType {
   PRIMITIVE = 'primitive',
@@ -56,7 +56,7 @@ export function validateWhereField(where: CrudRequestWhereField): void {
   }
 
   if (type === WhereOperatorValueType.EMPTY) {
-    ensureFalsy(name, where.value);
+    ensureEmpty(name, where.value);
 
     return;
   }

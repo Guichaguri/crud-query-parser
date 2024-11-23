@@ -35,9 +35,9 @@ export function ensureArray<T>(fieldName: string, data: T[] | any, minLength: nu
   return data;
 }
 
-export function ensureFalsy(fieldName: string, data: any) {
-  if (data)
-    throw new Error(`${fieldName} must be null`);
+export function ensureEmpty(fieldName: string, data: any) {
+  if (isValid(data) && data !== true)
+    throw new Error(`${fieldName} must be true, null or undefined`);
 }
 
 export function isValid<T>(value: T | undefined | null): value is T {

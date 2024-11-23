@@ -1,9 +1,11 @@
 import { Brackets, ObjectLiteral, SelectQueryBuilder, WhereExpressionBuilder } from 'typeorm';
+import { Alias } from 'typeorm/query-builder/Alias';
 import { QueryAdapter } from '../../models/query-adapter';
 import { CrudRequest, CrudRequestOrder, CrudRequestRelation, ParsedRequestSelect } from '../../models/crud-request';
 import { CrudRequestWhere, CrudRequestWhereField, CrudRequestWhereOperator } from '../../models/crud-request-where';
 import { GetManyResult } from '../../models/get-many-result';
-import { ensureArray, ensureFalsy, getOffset, isValid } from '../../utils/functions';
+import { FieldPath } from '../../models/field-path';
+import { ensureArray, ensureEmpty, getOffset, isValid } from '../../utils/functions';
 import { pathHasBase } from '../../utils/field-path';
 
 export interface TypeOrmQueryAdapterOptions {
@@ -13,6 +15,43 @@ export interface TypeOrmQueryAdapterOptions {
    * If undefined, it will be enabled by default for postgres and aurora-postgres databases
    */
   ilike?: boolean;
+
+  /**
+   * What it will do when it finds invalid fields.
+   *
+   * By default, `select` and `order` will ignore invalid fields, and `where` will deny invalid fields.
+   */
+  invalidFields?: {
+    /**
+     * What it will do when it finds invalid fields in `select`.
+     *
+     * If "ignore", it will remove invalid fields
+     * If "deny", it will throw an exception for invalid fields
+     * If "allow-unsafe", it will not validate any fields. Unsafe: this can allow SQL injection
+     * If undefined, it will default to "ignore"
+     */
+    select?: 'ignore' | 'deny' | 'allow-unsafe';
+
+    /**
+     * What it will do when it finds invalid fields in `order`.
+     *
+     * If "ignore", it will remove invalid fields
+     * If "deny", it will throw an exception for invalid fields
+     * If "allow-unsafe", it will not validate any fields. Unsafe: this can allow SQL injection
+     * If undefined, it will default to "ignore"
+     */
+    order?: 'ignore' | 'deny' | 'allow-unsafe';
+
+    /**
+     * What it will do when it finds invalid fields in `order`.
+     *
+     * If "ignore", it will remove invalid fields
+     * If "deny", it will throw an exception for invalid fields
+     * If "allow-unsafe", it will not validate any fields. Unsafe: this can allow SQL injection
+     * If undefined, it will default to "deny"
+     */
+    where?: 'ignore' | 'deny' | 'allow-unsafe';
+  }
 }
 
 /**
@@ -80,11 +119,15 @@ export class TypeOrmQueryAdapter implements QueryAdapter<SelectQueryBuilder<any>
   protected createBaseQuery<E extends ObjectLiteral>(qb: SelectQueryBuilder<E>, query: CrudRequest): SelectQueryBuilder<E> {
     const paramsDefined: string[] = [];
     const isILikeEnabled = this.isILikeEnabled(qb);
+    const mainAlias = qb.expressionMap.mainAlias;
 
-    this.adaptSelect(qb, query.select);
-    this.adaptRelations(qb, query.relations, query.select);
-    this.adaptWhere(qb.alias, qb, query.where, false, paramsDefined, isILikeEnabled);
-    this.adaptOrder(qb, query.order);
+    if (!mainAlias)
+      throw new Error('No main alias found'); // TODO custom error
+
+    this.adaptSelect(qb, mainAlias, query.select);
+    this.adaptRelations(qb, mainAlias, query.relations, query.select);
+    this.adaptWhere(mainAlias, qb, query.where, false, paramsDefined, isILikeEnabled);
+    this.adaptOrder(qb, mainAlias, query.order);
 
     return qb;
   }
@@ -104,31 +147,46 @@ export class TypeOrmQueryAdapter implements QueryAdapter<SelectQueryBuilder<any>
    * Adapts a select
    *
    * @param qb The query builder
+   * @param alias The base alias
    * @param select The parsed select fields
    */
-  protected adaptSelect<E extends ObjectLiteral>(qb: SelectQueryBuilder<E>, select: ParsedRequestSelect): void {
+  protected adaptSelect<E extends ObjectLiteral>(
+    qb: SelectQueryBuilder<E>,
+    alias: Alias,
+    select: ParsedRequestSelect,
+  ): void {
     if (select.length === 0)
       return;
 
     // Only fields that are one level deep
-    const fields = select.filter(f => f.field.length === 1);
+    const fields = select
+      .filter(f => f.field.length === 1)
+      .filter(f => this.validateField(alias, f.field, 'select'));
 
-    qb.select(fields.map(s => [qb.alias, ...s.field].join('.')));
+    qb.select(fields.map(s => [alias.name, ...s.field].join('.')));
   }
 
   /**
    * Adapts the join relation list
    *
    * @param qb The query builder
+   * @param baseAlias The base alias
    * @param relations The parsed relation list
    * @param select The parsed select fields
    */
-  protected adaptRelations<E extends ObjectLiteral>(qb: SelectQueryBuilder<E>, relations: CrudRequestRelation[], select: ParsedRequestSelect): void {
+  protected adaptRelations<E extends ObjectLiteral>(
+    qb: SelectQueryBuilder<E>,
+    baseAlias: Alias,
+    relations: CrudRequestRelation[],
+    select: ParsedRequestSelect,
+  ): void {
     for (const relation of relations) {
-      const path = [qb.alias, ...relation.field].join('.');
+      const path = [baseAlias.name, ...relation.field].join('.');
       const alias = relation.alias || path.replace('.', '_');
 
-      const fields = select.filter(f => pathHasBase(f.field, relation.field));
+      const fields = select
+        .filter(f => pathHasBase(f.field, relation.field))
+        .filter(f => this.validateField(baseAlias, f.field, 'select'));
 
       if (fields.length === 0) {
         qb.leftJoinAndSelect(path, alias);
@@ -143,11 +201,19 @@ export class TypeOrmQueryAdapter implements QueryAdapter<SelectQueryBuilder<any>
    * Adapts the order by list
    *
    * @param qb The query builder
+   * @param alias The base alias
    * @param ordering The parsed ordering
    */
-  protected adaptOrder<E extends ObjectLiteral>(qb: SelectQueryBuilder<E>, ordering: CrudRequestOrder[]): void {
+  protected adaptOrder<E extends ObjectLiteral>(
+    qb: SelectQueryBuilder<E>,
+    alias: Alias,
+    ordering: CrudRequestOrder[],
+  ): void {
     for (const order of ordering) {
-      const path = [qb.alias, ...order.field].join('.');
+      if (!this.validateField(alias, order.field, 'order'))
+        continue;
+
+      const path = [alias.name, ...order.field].join('.');
 
       qb.addOrderBy(path, order.order);
     }
@@ -164,7 +230,7 @@ export class TypeOrmQueryAdapter implements QueryAdapter<SelectQueryBuilder<any>
    * @param isILikeEnabled Whether the ILIKE operator can be used
    */
   protected adaptWhere(
-    alias: string,
+    alias: Alias,
     qb: WhereExpressionBuilder,
     where: CrudRequestWhere,
     or: boolean,
@@ -182,6 +248,9 @@ export class TypeOrmQueryAdapter implements QueryAdapter<SelectQueryBuilder<any>
         wqb => where.and!.forEach(item => this.adaptWhere(alias, wqb, item, false, params, isILikeEnabled))
       ));
     } else if (where.field) {
+      if (!this.validateField(alias, where.field, 'where'))
+        return;
+
       const param = this.createParam(params, where.field);
       const query = this.mapWhereOperators(alias, where as CrudRequestWhereField, param, isILikeEnabled);
 
@@ -210,6 +279,68 @@ export class TypeOrmQueryAdapter implements QueryAdapter<SelectQueryBuilder<any>
   }
 
   /**
+   * Checks whether the field is valid
+   *
+   * @param alias The base alias
+   * @param path The field path
+   * @param source The source where the field validation comes from
+   */
+  protected validateField(alias: Alias, path: FieldPath, source: 'select' | 'order' | 'where'): boolean {
+    const isValid = this.isFieldValid(alias, path);
+
+    if (isValid)
+      return true;
+
+    const defaults = {
+      select: 'ignore',
+      order: 'ignore',
+      where: 'deny',
+    };
+
+    const rule = this.options.invalidFields?.[source] || defaults[source];
+
+    if (rule === 'ignore')
+      return false;
+
+    if (rule === 'allow-unsafe')
+      return true;
+
+    if (rule === 'deny')
+      throw new Error(`${source} field ${path.join('.')} is invalid.`);
+
+    return false;
+  }
+
+  /**
+   * Checks whether the field is valid
+   *
+   * @param alias The base alias
+   * @param path The field path
+   */
+  protected isFieldValid(alias: Alias, path: FieldPath): boolean {
+    if (path.length === 0)
+      return false;
+
+    let metadata = alias.metadata;
+
+    const relationPath = [...path];
+    const field = relationPath.pop()!;
+
+    for (const part of relationPath) {
+      const relation = metadata.findRelationWithPropertyPath(part);
+
+      if (!relation)
+        return false;
+
+      metadata = relation.entityMetadata;
+    }
+
+    const column = metadata.findColumnWithPropertyPathStrict(field);
+
+    return !!column;
+  }
+
+  /**
    * Maps where operators to a pseudo-SQL statement and a parameter map
    *
    * @param alias The query builder alias
@@ -218,12 +349,12 @@ export class TypeOrmQueryAdapter implements QueryAdapter<SelectQueryBuilder<any>
    * @param isILikeEnabled Whether the ILIKE operator can be used
    */
   protected mapWhereOperators(
-    alias: string,
+    alias: Alias,
     where: CrudRequestWhereField,
     param: string,
     isILikeEnabled: boolean,
   ): { where: string, params: ObjectLiteral } {
-    const field = [alias, ...where.field].join('.');
+    const field = [alias.name, ...where.field].join('.');
     const operator = where.operator;
     let value: unknown = where.value;
 
@@ -277,12 +408,12 @@ export class TypeOrmQueryAdapter implements QueryAdapter<SelectQueryBuilder<any>
         };
 
       case CrudRequestWhereOperator.IS_NULL:
-        ensureFalsy('IS NULL operator', value);
+        ensureEmpty('IS NULL operator', value);
 
         return { where: `${field} IS NULL`, params: {} };
 
       case CrudRequestWhereOperator.NOT_NULL:
-        ensureFalsy('NOT NULL operator', value);
+        ensureEmpty('NOT NULL operator', value);
 
         return { where: `${field} IS NOT NULL`, params: {} };
 
@@ -319,6 +450,13 @@ export class TypeOrmQueryAdapter implements QueryAdapter<SelectQueryBuilder<any>
     }
   }
 
+  /**
+   * Creates an ILIKE expression that works on all databases
+   *
+   * @param isILikeEnabled Whether ILIKE is supported
+   * @param field The field name
+   * @param not Whether the expression is inverted
+   */
   protected createLowerLike(isILikeEnabled: boolean, field: string, not: boolean = false): string {
     if (isILikeEnabled)
       return not ? `${field} NOT ILIKE` : `${field} ILIKE`;
@@ -326,6 +464,11 @@ export class TypeOrmQueryAdapter implements QueryAdapter<SelectQueryBuilder<any>
     return not ? `LOWER(${field}) NOT LIKE` : `LOWER(${field}) LIKE`;
   }
 
+  /**
+   * Checks whether ILIKE expressions are available for the current database
+   *
+   * @param qb The query builder
+   */
   protected isILikeEnabled(qb: SelectQueryBuilder<any>): boolean {
     const ilikeEnabled = this.options.ilike;
 
