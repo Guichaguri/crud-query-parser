@@ -1,4 +1,4 @@
-import { Column, Entity, ManyToOne, OneToMany, PrimaryColumn } from 'typeorm';
+import { Column, Entity, OneToMany, PrimaryColumn } from 'typeorm';
 import { PostEntity } from './post.entity';
 
 @Entity('category')
