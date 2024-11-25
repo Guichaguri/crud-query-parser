@@ -1,3 +1,10 @@
+export function pathParse(value: string | string[]): string[] {
+  if (typeof value === 'string')
+    return value.split('.');
+
+  return value;
+}
+
 /**
  * Checks whether two field paths are equal
  *

@@ -61,6 +61,33 @@ const adapter = new TypeormQueryAdapter();
 // const result = adapter.getMany(repository.createQueryBuilder(), crudRequest);
 ```
 
+### DynamoDB
+
+This adapter requires [@aws-sdk/client-dynamodb](https://www.npmjs.com/package/@aws-sdk/client-dynamodb) and [@aws-sdk/util-dynamodb](https://www.npmjs.com/package/@aws-sdk/util-dynamodb) 3.x.x
+
+```ts
+import { DynamoDBQueryAdapter } from 'crud-query-parser/adapters/dynamodb';
+import { DynamoDBClient } from '@aws-sdk/client-dynamodb';
+
+const adapter = new DynamoDBQueryAdapter({
+  client: new DynamoDBClient(),
+  tableName: 'posts',
+  partitionKey: 'id',
+});
+
+// Then, you can pass a partial Query/Scan/GetItem input to it:
+// const result = adapter.getMany({}, crudRequest);
+```
+
+The DynamoDB has the following caveats:
+- Pagination is not supported (both `page` and `offset` parameters are ignored)
+- A Query command is used instead of a Scan command if the where filter has a top-level condition for the partition key.
+- Ordering is only supported for the sort key in a Query command.
+- Relations are completely ignored as DynamoDB is a NoSQL database.
+- The following where operators are not supported in DynamoDB:
+  - Any case-insensitive operator (e.g. `EQ_LOWER`, `CONTAINS_LOWER`, `STARTS_LOWER` and so on)
+  - Ends With (`ENDS`)
+
 ## Helpers
 
 ### NestJS
