@@ -58,9 +58,9 @@ export type DynamoDBQuery = Partial<GetItemInput> & Partial<ScanInput> & Partial
  * Represents a command input that is either a DynamoDB GetItem, DynamoDB Query or a DynamoDB Scan
  */
 export type GetOrQueryOrScanInput =
-  { get: GetItemInput, scan: undefined, query: undefined } |
-  { query: QueryInput, get: undefined, scan: undefined } |
-  { scan: ScanInput, get: undefined, query: undefined };
+  { count: GetItemInput, full: GetItemInput, type: 'get' } |
+  { count: QueryInput, full: QueryInput, type: 'query' } |
+  { count: ScanInput, full: ScanInput, type: 'scan' };
 
 export interface DynamoDBQueryContext {
   /**
@@ -102,18 +102,18 @@ export class DynamoDBQueryAdapter implements QueryAdapter<DynamoDBQuery> {
    * @inheritDoc
    */
   public build(baseQuery: DynamoDBQuery, request: CrudRequest): DynamoDBQuery {
-    const result = this.buildGetOrQueryOrScan(baseQuery, request);
+    const { full } = this.buildBaseGetOrQueryOrScan(baseQuery, request);
 
-    return result.get || result.query || result.scan;
+    return full;
   }
 
   /**
    * @inheritDoc
    */
   public async getMany<E>(baseQuery: DynamoDBQuery, request: CrudRequest): Promise<GetManyResult<E>> {
-    const queryOrScan = this.buildGetOrQueryOrScan(baseQuery, request);
+    const input = this.buildBaseGetOrQueryOrScan(baseQuery, request);
 
-    const [data, total] = await this.fetchDataAndCount<E>(queryOrScan, true);
+    const [data, total] = await this.fetchDataAndCount<E>(input, true);
 
     const count = data.length;
     const limit = request.limit || baseQuery.Limit;
@@ -132,7 +132,7 @@ export class DynamoDBQueryAdapter implements QueryAdapter<DynamoDBQuery> {
    * @inheritDoc
    */
   public async getOne<E>(baseQuery: DynamoDBQuery, request: CrudRequest): Promise<E | null> {
-    const input = this.buildGetOrQueryOrScan(baseQuery, { ...request, limit: 1 });
+    const input = this.buildBaseGetOrQueryOrScan(baseQuery, { ...request, limit: 1 });
 
     const [data] = await this.fetchDataAndCount<E>(input, false);
 
@@ -140,59 +140,6 @@ export class DynamoDBQueryAdapter implements QueryAdapter<DynamoDBQuery> {
       return null;
 
     return data[0];
-  }
-
-  /**
-   * Creates a DynamoDB GetItem, Query or Scan input, based on whether the partition key and sort key are present in the where conditions
-   *
-   * @param baseInput The base query
-   * @param request The crud request
-   */
-  public buildGetOrQueryOrScan(
-    baseInput: DynamoDBQuery,
-    request: CrudRequest,
-  ): GetOrQueryOrScanInput {
-    const input: DynamoDBQuery = {
-      ...baseInput,
-      TableName: baseInput.TableName || this.options.tableName,
-    };
-    const ctx: DynamoDBQueryContext = { allowKeySplitting: true };
-
-    this.adaptProjection(input, request.select);
-    this.adaptFilter(input, ctx, request.where);
-    this.adaptOrder(input, request.order);
-    this.adaptLimit(input, request.limit);
-
-    // In case there is an existing GetItem key
-    if (input.Key)
-      return { get: input as GetItemInput, query: undefined, scan: undefined };
-
-    // In case there is an existing Query key
-    if (input.KeyConditionExpression)
-      return { get: undefined, query: input as QueryInput, scan: undefined };
-
-    const operation = this.getAvailableCommandByKey(ctx.key);
-
-    // GetItem
-    if (operation === 'get' && ctx.key) {
-      this.adaptGetItemKey(input, ctx.key);
-
-      return { get: input as GetItemInput, query: undefined, scan: undefined };
-    }
-
-    // Query
-    if (operation === 'query' && ctx.key) {
-      this.adaptQueryKeyExpression(input, ctx.key);
-
-      return { get: undefined, query: input as QueryInput, scan: undefined };
-    }
-
-    // In case there are keys, we'll add them back to the filter expression
-    if (ctx.key)
-      this.adaptFilterKeyExpression(input, ctx.key);
-
-    // Scan
-    return { get: undefined, query: undefined, scan: input as ScanInput };
   }
 
   /**
@@ -254,12 +201,76 @@ export class DynamoDBQueryAdapter implements QueryAdapter<DynamoDBQuery> {
     const ctx: DynamoDBQueryContext = { allowKeySplitting: true };
 
     this.adaptProjection(query, request.select);
-    this.adaptFilter(query, ctx, request.where);
 
     if (ctx.key)
       this.adaptGetItemKey(query, ctx.key);
 
     return query;
+  }
+
+  /**
+   * Creates a DynamoDB GetItem, Query or Scan input, based on whether the partition key and sort key are present in the where conditions
+   *
+   * @param baseInput The base query
+   * @param request The crud request
+   */
+  protected buildBaseGetOrQueryOrScan(
+    baseInput: DynamoDBQuery,
+    request: CrudRequest,
+  ): GetOrQueryOrScanInput {
+    const input: DynamoDBQuery = {
+      ...baseInput,
+      TableName: baseInput.TableName || this.options.tableName,
+    };
+    const ctx: DynamoDBQueryContext = { allowKeySplitting: true };
+
+    this.adaptFilter(input, ctx, request.where);
+
+    const mapResult = (type: 'get' | 'query' | 'scan'): GetOrQueryOrScanInput => {
+      const count = {
+        ...input,
+        ExpressionAttributeNames: { ...input.ExpressionAttributeNames },
+        ExpressionAttributeValues: { ...input.ExpressionAttributeValues },
+        Select: 'COUNT',
+      };
+
+      this.adaptProjection(input, request.select);
+      this.adaptOrder(input, request.order);
+      this.adaptLimit(input, request.limit);
+
+      return { count: count as any, full: input as any, type };
+    };
+
+    // In case there is an existing GetItem key
+    if (input.Key)
+      return mapResult('get');
+
+    // In case there is an existing Query key
+    if (input.KeyConditionExpression)
+      return mapResult('query');
+
+    const operation = this.getAvailableCommandByKey(input, ctx.key);
+
+    // GetItem
+    if (operation === 'get' && ctx.key) {
+      this.adaptGetItemKey(input, ctx.key);
+
+      return mapResult('get');
+    }
+
+    // Query
+    if (operation === 'query' && ctx.key) {
+      this.adaptQueryKeyExpression(input, ctx.key);
+
+      return mapResult('query');
+    }
+
+    // In case there are keys, we'll add them back to the filter expression
+    if (ctx.key)
+      this.adaptFilterKeyExpression(input, ctx.key);
+
+    // Scan
+    return mapResult('scan');
   }
 
   /**
@@ -269,8 +280,8 @@ export class DynamoDBQueryAdapter implements QueryAdapter<DynamoDBQuery> {
    * @param fetchCount Whether it should fetch the total number of items too.
    */
   protected async fetchDataAndCount<E>(mixed: GetOrQueryOrScanInput, fetchCount: boolean): Promise<[E[], number?]> {
-    if (mixed.get) {
-      const result = await this.options.client.send(new GetItemCommand(mixed.get));
+    if (mixed.type === 'get') {
+      const result = await this.options.client.send(new GetItemCommand(mixed.full));
 
       if (!result.Item)
         return [[], 0];
@@ -280,12 +291,10 @@ export class DynamoDBQueryAdapter implements QueryAdapter<DynamoDBQuery> {
 
     const shouldFetchCount = fetchCount && !this.options.disableCount;
 
-    if (mixed.query) {
-      const countQuery: QueryInput = { ...mixed.query, Limit: undefined, ProjectionExpression: undefined, Select: 'COUNT' };
-
+    if (mixed.type === 'query') {
       const [output, count] = await Promise.all([
-        this.options.client.send(new QueryCommand(mixed.query)),
-        shouldFetchCount ? this.options.client.send(new QueryCommand(countQuery)) : undefined,
+        this.options.client.send(new QueryCommand(mixed.full)),
+        shouldFetchCount ? this.options.client.send(new QueryCommand(mixed.count)) : undefined,
       ]);
 
       const items = (output.Items || []).map(item => this.unmarshall<E>(item));
@@ -293,12 +302,10 @@ export class DynamoDBQueryAdapter implements QueryAdapter<DynamoDBQuery> {
       return [items, count?.Count];
     }
 
-    if (mixed.scan && !this.options.disableScan) {
-      const countScan: ScanInput = { ...mixed.scan, Limit: undefined, ProjectionExpression: undefined, Select: 'COUNT' };
-
+    if (mixed.type === 'scan' && !this.options.disableScan) {
       const [output, count] = await Promise.all([
-        this.options.client.send(new ScanCommand(mixed.scan)),
-        shouldFetchCount ? this.options.client.send(new ScanCommand(countScan)) : undefined,
+        this.options.client.send(new ScanCommand(mixed.full)),
+        shouldFetchCount ? this.options.client.send(new ScanCommand(mixed.count)) : undefined,
       ]);
 
       const items = (output.Items || []).map(item => this.unmarshall<E>(item));
@@ -316,9 +323,10 @@ export class DynamoDBQueryAdapter implements QueryAdapter<DynamoDBQuery> {
    * If only the partition key is available but not the sort key, it results in Query.
    * If no keys are available, it resutls in Scan.
    *
+   * @param input The DynamoDB query
    * @param keys The primary keys
    */
-  protected getAvailableCommandByKey(keys: CrudRequestWhereField[] | undefined): 'get' | 'query' | 'scan' {
+  protected getAvailableCommandByKey(input: DynamoDBQuery, keys: CrudRequestWhereField[] | undefined): 'get' | 'query' | 'scan' {
     if (!keys)
       return 'scan';
 
@@ -337,7 +345,7 @@ export class DynamoDBQueryAdapter implements QueryAdapter<DynamoDBQuery> {
         hasSortKeyEq = true;
     }
 
-    if (hasPartitionKeyEq && hasSortKeyEq)
+    if (hasPartitionKeyEq && hasSortKeyEq && !input.FilterExpression)
       return 'get';
 
     if (hasPartitionKeyEq)
@@ -390,7 +398,7 @@ export class DynamoDBQueryAdapter implements QueryAdapter<DynamoDBQuery> {
     }
 
     if (query.FilterExpression)
-      query.FilterExpression = condition.join(' AND ') + ' AND (' + query.FilterExpression + ')';
+      query.FilterExpression = condition.join(' AND ') + ' AND ' + this.wrapParenthesis(query.FilterExpression);
     else
       query.FilterExpression = condition.join(' AND ');
   }
@@ -465,7 +473,8 @@ export class DynamoDBQueryAdapter implements QueryAdapter<DynamoDBQuery> {
 
     const existingFilter = query.FilterExpression;
 
-    query.FilterExpression = existingFilter ? `(${existingFilter}) AND (${filter})` : filter;
+    query.FilterExpression = existingFilter ?
+      `${this.wrapParenthesis(existingFilter)} AND ${this.wrapParenthesis(filter)}` : filter;
   }
 
   /**
@@ -498,10 +507,12 @@ export class DynamoDBQueryAdapter implements QueryAdapter<DynamoDBQuery> {
       if (where.and.length === 1)
         return this.mapWhere(query, ctx, where.and[0], isTopLevelAnd);
 
-      return '(' + where.and
-        .map(item => this.mapWhere(query, ctx, item, isTopLevelAnd))
-        .filter(query => !!query)
-        .join(' AND ') + ')';
+      return this.wrapParenthesis(
+        where.and
+          .map(item => this.mapWhere(query, ctx, item, isTopLevelAnd))
+          .filter(query => !!query)
+          .join(' AND ')
+      );
     }
 
     // OR
@@ -509,10 +520,12 @@ export class DynamoDBQueryAdapter implements QueryAdapter<DynamoDBQuery> {
       if (where.or.length === 1)
         return this.mapWhere(query, ctx, where.or[0], isTopLevelAnd);
 
-      return '(' + where.or
-        .map(item => this.mapWhere(query, ctx, item, false))
-        .filter(query => !!query)
-        .join(' OR ') + ')';
+      return this.wrapParenthesis(
+        where.or
+          .map(item => this.mapWhere(query, ctx, item, false))
+          .filter(query => !!query)
+          .join(' OR ')
+      );
     }
 
     // Condition
@@ -653,6 +666,16 @@ export class DynamoDBQueryAdapter implements QueryAdapter<DynamoDBQuery> {
     query.ExpressionAttributeNames = names;
 
     return attributeName;
+  }
+
+  protected wrapParenthesis(expression: string): string {
+    if (!expression)
+      return '';
+
+    if (expression.startsWith('(') && expression.endsWith(')'))
+      return expression;
+
+    return `(${expression})`;
   }
 
   /**
