@@ -25,7 +25,7 @@ const requestQuery = { ... };
 const crudRequest = parser.parse(requestQuery);
 
 // Using the query adapter, you can query in your ORM from the CrudRequest
-const result = adapter.getMany(userRepository.createQueryBuilder(), crudRequest); // GetManyResult<UserEntity>
+const result = await adapter.getMany(userRepository.createQueryBuilder(), crudRequest); // GetManyResult<UserEntity>
 
 // The result object has properties like data, page, total
 console.log(result);
@@ -58,7 +58,7 @@ import { TypeormQueryAdapter } from 'crud-query-parser/adapters/typeorm';
 const adapter = new TypeormQueryAdapter();
 
 // Then, you can pass a query builder to it:
-// const result = adapter.getMany(repository.createQueryBuilder(), crudRequest);
+// const result = await adapter.getMany(repository.createQueryBuilder(), crudRequest);
 ```
 
 ### DynamoDB
@@ -75,8 +75,8 @@ const adapter = new DynamoDBQueryAdapter({
   partitionKey: 'id',
 });
 
-// Then, you can pass a partial Query/Scan/GetItem input to it:
-// const result = adapter.getMany({}, crudRequest);
+// Then, you can pass a partial Query/Scan input to it:
+// const result = await adapter.getMany({}, crudRequest);
 ```
 
 The DynamoDB has the following caveats:
