@@ -5,10 +5,27 @@ import { CrudRequestWhere, CrudRequestWhereOperator, CrudRequestWhereValueType }
 import { ensureArray, ensurePrimitive, ensureString, getOffset, isValid } from '../../utils/functions';
 import { pathGetValue, pathSetValue } from '../../utils/field-path';
 
+export interface ArrayQueryAdapterOptions<T> {
+  /**
+   * Creates an empty entity.
+   * This will be called when the request `select` list is not empty.
+   * This can be used to instanciate an entity class.
+   * If not defined, it will create a plain object instead.
+   *
+   * @param existing The existing entity, which will be replaced by the created one
+   */
+  createEmptyEntity?: (existing: T) => T;
+}
+
 /**
  * Adapts queries to plain JS arrays
  */
 export class ArrayQueryAdapter<T extends object> implements QueryAdapter<T[], T> {
+
+  constructor(
+    protected readonly options: ArrayQueryAdapterOptions<T> = {},
+  ) {}
+
   /**
    * @inheritDoc
    */
@@ -74,7 +91,7 @@ export class ArrayQueryAdapter<T extends object> implements QueryAdapter<T[], T>
       return data;
 
     return data.map(item => {
-      const newObject = <T>{};
+      const newObject = this.options.createEmptyEntity?.(item) ?? <T>{};
 
       for (const field of select) {
         pathSetValue(newObject, field.field, pathGetValue(item, field.field));
@@ -102,7 +119,6 @@ export class ArrayQueryAdapter<T extends object> implements QueryAdapter<T[], T>
    */
   protected applyOrder(data: T[], order: CrudRequestOrder[]): T[] {
     return data.sort((a, b) => {
-
       for (const o of order) {
         const valueA = pathGetValue(a, o.field);
         const valueB = pathGetValue(b, o.field);
@@ -137,22 +153,22 @@ export class ArrayQueryAdapter<T extends object> implements QueryAdapter<T[], T>
   /**
    * Compare two values.
    *
-   * Returns positive when B is greater than A;
-   * Returns negative when A is greater than B;
-   * Returns 0 when both values are equal.
+   * Returns positive when A is greater than B;
+   * Returns negative when B is greater than A;
+   * Returns 0 when both values are equivalent.
    *
    * @param a The first value
    * @param b The second value
    */
   protected compareOrder(a: any, b: any): number {
     if (typeof a === 'number' && typeof b === 'number')
-      return b - a;
+      return a - b;
 
     if (typeof a === 'string' && typeof b === 'string')
-      return b.localeCompare(a);
+      return a.localeCompare(b);
 
     if (typeof a === 'boolean' && typeof b === 'boolean')
-      return +b - +a;
+      return +a - +b;
 
     return 0;
   }
@@ -270,6 +286,9 @@ export class ArrayQueryAdapter<T extends object> implements QueryAdapter<T[], T>
 
         return Array.isArray(item) ? !item.some(elem => val === elem?.toString().toLowerCase()) : true;
       }
+
+      default:
+        throw new Error(`Unsupported operator "${operator}"`);
     }
   }
 }
