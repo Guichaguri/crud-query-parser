@@ -1,7 +1,7 @@
 import { CrudRequest } from './crud-request';
 import { OpenAPIParameter } from './openapi-parameter';
 
-export type RequestParamValue = string | string[] | undefined;
+export type RequestParamValue = string | string[] | object | object[] | undefined;
 
 export interface RequestParser {
 

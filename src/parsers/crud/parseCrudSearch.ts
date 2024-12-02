@@ -175,7 +175,7 @@ export function parseCrudFilters(builder: CrudRequestWhereBuilder, andFilters: s
 
 function parseCrudFilter(builder: CrudRequestWhereBuilder, rawFilters: string[]): void {
   for (const rawFilter of rawFilters) {
-    const [name, op, value] = rawFilter.split('||', 3);
+    const [name, op, value] = rawFilter.toString().split('||', 3);
     const operator = operatorMap[op as OperatorType];
 
     if (!operator)

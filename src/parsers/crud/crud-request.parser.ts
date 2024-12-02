@@ -2,8 +2,8 @@ import { RequestParamValue, RequestParser } from '../../models/request-parser';
 import { CrudRequest, CrudRequestOrder, CrudRequestRelation, ParsedRequestSelect } from '../../models/crud-request';
 import { OpenAPIParameter } from '../../models/openapi-parameter';
 import { CrudRequestWhereBuilder } from '../../utils/crud-request-where.builder';
+import { getParamJSON, getParamNumber, getParamStringArray } from '../../utils/parser';
 import { parseCrudFilters, parseCrudSearch } from './parseCrudSearch';
-import { isValid } from '../../utils/functions';
 import { SCondition } from './types';
 
 export interface CrudRequestParserOptions {
@@ -156,9 +156,9 @@ export class CrudRequestParser implements RequestParser {
     if (!this.options.disableWhere)
       this.parseSearch(where, query['s'], query['filter'], query['or']);
 
-    const limit = this.options.disableLimit ? undefined : this.parseNumber(query['limit'] || query['per_page']);
-    const offset = this.options.disableOffset ? undefined : this.parseNumber(query['offset']);
-    const page = this.options.disableOffset ? undefined : this.parseNumber(query['page']);
+    const limit = this.options.disableLimit ? undefined : getParamNumber(query['limit'] || query['per_page']);
+    const offset = this.options.disableOffset ? undefined : getParamNumber(query['offset']);
+    const page = this.options.disableOffset ? undefined : getParamNumber(query['page']);
 
     return {
       select,
@@ -172,10 +172,7 @@ export class CrudRequestParser implements RequestParser {
   }
 
   protected parseSelect(select: ParsedRequestSelect, rawSelect: RequestParamValue): void {
-    if (!rawSelect)
-      return;
-
-    const selectFields = Array.isArray(rawSelect) ? rawSelect : rawSelect.split(',');
+    const selectFields = getParamStringArray(rawSelect, ',');
 
     selectFields.forEach(field => {
       select.push({
@@ -185,87 +182,56 @@ export class CrudRequestParser implements RequestParser {
   }
 
   protected parseJoin(requestFields: ParsedRequestSelect, relations: CrudRequestRelation[], rawJoin: RequestParamValue): void {
-    if (!rawJoin)
-      return;
+    const joins = getParamStringArray(rawJoin);
 
-    if (Array.isArray(rawJoin)) {
-      rawJoin.forEach(value => this.parseJoin(requestFields, relations, value));
-      return;
-    }
+    for (const join of joins) {
+      const [field, select] = join.split('||', 2);
+      const fieldPath = field.split('.');
 
-    const join = rawJoin.toString();
-
-    const [field, select] = join.split('||', 2);
-    const fieldPath = field.split('.');
-
-    relations.push({
-      field: fieldPath,
-    });
-
-    if (select) {
-      const selectFields = select.split(',');
-
-      selectFields.forEach(f => {
-        requestFields.push({
-          field: [...fieldPath, f],
-        });
+      relations.push({
+        field: fieldPath,
       });
+
+      if (select) {
+        const selectFields = select.split(',');
+
+        selectFields.forEach(f => {
+          requestFields.push({
+            field: [...fieldPath, f],
+          });
+        });
+      }
     }
   }
 
   protected parseOrder(ordering: CrudRequestOrder[], rawOrder: RequestParamValue): void {
-    if (!rawOrder)
-      return;
+    const order = getParamStringArray(rawOrder);
 
-    if (Array.isArray(rawOrder)) {
-      rawOrder.forEach(value => this.parseOrder(ordering, value));
-      return;
+    for (const entry of order) {
+      const [field, direction] = entry.split(',');
+
+      ordering.push({
+        field: field.split('.'),
+        order: direction?.toUpperCase() === 'DESC' ? 'DESC' : 'ASC',
+      });
     }
-
-    const [field, direction] = rawOrder.split(',');
-
-    ordering.push({
-      field: field.split('.'),
-      order: direction?.toUpperCase() === 'DESC' ? 'DESC' : 'ASC',
-    });
-  }
-
-  protected parseNumber(raw: RequestParamValue): number | undefined {
-    if (Array.isArray(raw))
-      raw = raw.length > 0 ? raw[0] : undefined;
-
-    if (!isValid(raw))
-      return undefined;
-
-    const num = +raw;
-
-    return isNaN(num) ? undefined : num;
   }
 
   protected parseSearch(builder: CrudRequestWhereBuilder, rawSearch: RequestParamValue, rawFilter: RequestParamValue, rawOr: RequestParamValue): void {
-    if (Array.isArray(rawSearch))
-      rawSearch = rawSearch.length > 0 ? rawSearch[0] : undefined;
+    const search = getParamJSON<SCondition>(rawSearch);
 
-    if (!rawSearch) {
+    if (!search) {
       // In case the search is not defined, we'll read the filter and or parameters
       this.parseFilter(builder, rawFilter, rawOr);
       return;
     }
 
-    const search: SCondition = JSON.parse(rawSearch);
-
     parseCrudSearch(builder, search);
   }
 
   protected parseFilter(builder: CrudRequestWhereBuilder, rawFilter: RequestParamValue, rawOr: RequestParamValue): void {
-    let andFilters: string[] = [];
-    let orFilters: string[] = [];
-
-    if (rawFilter)
-      andFilters = Array.isArray(rawFilter) ? rawFilter : [rawFilter];
-
-    if (rawOr)
-      orFilters = Array.isArray(rawOr) ? rawOr : [rawOr];
+    const andFilters = getParamStringArray(rawFilter);
+    const orFilters = getParamStringArray(rawOr);
 
     parseCrudFilters(builder, andFilters, orFilters);
   }
