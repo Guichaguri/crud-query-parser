@@ -1,31 +1,27 @@
 import { CrudRequestFields } from '../models/crud-request';
 
-/*export function setFieldByPath<T>(obj: ParsedRequestFields<T>, field: string, value: T): void {
-  const parts = field.split('.');
+export function ensurePrimitive(fieldName: string, data: any): number | string | boolean | Date {
+  if (typeof data === 'number' || typeof data === 'string' || typeof data === 'boolean' || data instanceof Date)
+    return data;
 
-  while (parts.length > 1) {
-    const name = parts.shift();
+  throw new Error(`${fieldName} must be a string, number or boolean`);
+}
 
-    if (!Array.isArray(obj[name]))
-      obj[name] = {};
-
-    obj = obj[name] as ParsedRequestFields<T>;
-  }
-
-  obj[parts.shift()] = value;
-}*/
-
-export function ensurePrimitive(fieldName: string, data: any) {
+export function ensurePrimitiveOrNull(fieldName: string, data: any): number | string | boolean | Date | undefined | null {
   if (data === null || data === undefined)
-    return;
+    return data;
 
-  if (typeof data === 'number' || typeof data === 'string' || typeof data === 'boolean')
-    return;
-
-  if (data instanceof Date)
-    return;
+  if (typeof data === 'number' || typeof data === 'string' || typeof data === 'boolean' || data instanceof Date)
+    return data;
 
   throw new Error(`${fieldName} must be a string, number, boolean or null`);
+}
+
+export function ensureString(fieldName: string, data: any): string {
+  if (typeof data === 'string')
+    return data;
+
+  throw new Error(`${fieldName} must be a string, number or boolean`);
 }
 
 export function ensureArray<T>(fieldName: string, data: T[] | any, minLength: number = 0): T[] {
@@ -46,4 +42,16 @@ export function isValid<T>(value: T | undefined | null): value is T {
 
 export function getOffset(offset: number | undefined, limit?: number, page?: number): number {
   return offset ?? (limit && page ? limit * page : 0);
+}
+
+export interface Type<T> extends Function { new (... args: any[]): T; }
+
+export function createInstance<T extends object>(clazzOrInstance: T | Type<T> | undefined): T | undefined {
+  if (typeof clazzOrInstance === 'function')
+    return new clazzOrInstance();
+
+  if (typeof clazzOrInstance === 'object')
+    return clazzOrInstance as T;
+
+  return undefined;
 }

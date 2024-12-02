@@ -1,3 +1,10 @@
+import { isValid } from './functions';
+
+/**
+ * Parses a path by splitting it by dots
+ *
+ * @param value The full path as a string or the parts already split
+ */
 export function pathParse(value: string | string[]): string[] {
   if (typeof value === 'string')
     return value.split('.');
@@ -64,4 +71,55 @@ export function pathGetBaseAndName(path: string[]): [string[], string] {
  */
 export function pathGetFieldName(path: string[]): string {
   return path[path.length - 1];
+}
+
+/**
+ * Sets a value for the given path
+ *
+ * @param obj The root object
+ * @param field The full field path
+ */
+export function pathGetValue(obj: object, field: string[]): any {
+  let value: any = obj;
+
+  for (let i = 0; i < field.length; i++) {
+    const name = field[i];
+
+    if (!isValid(value))
+      return undefined;
+
+    if (typeof value !== 'object')
+      throw new Error(`Cannot get ${name} as it is not an object (got ${typeof value})`);
+
+    value = value[name];
+  }
+
+  return value;
+}
+
+/**
+ * Sets a value for the given path
+ *
+ * @param obj The root object
+ * @param field The full field path
+ * @param value The value to be set
+ */
+export function pathSetValue(obj: object, field: string[], value: any): void {
+  let self: any = obj;
+
+  for (let i = 0; i < field.length; i++) {
+    const name = field[i];
+
+    if (typeof self !== 'object')
+      throw new Error(`Cannot set ${name} as it is not an object (got ${typeof self})`);
+
+    const isLast = i === field.length - 1;
+
+    if (isLast)
+      self[name] = value;
+    else if (!isValid(self[name]))
+      self = self[name] = {};
+    else
+      self = self[name];
+  }
 }

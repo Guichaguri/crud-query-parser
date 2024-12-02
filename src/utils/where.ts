@@ -1,5 +1,5 @@
 import { CrudRequestWhereField, CrudRequestWhereOperator } from '../models/crud-request-where';
-import { ensureArray, ensureEmpty, ensurePrimitive } from './functions';
+import { ensureArray, ensureEmpty, ensurePrimitiveOrNull } from './functions';
 
 export enum WhereOperatorValueType {
   PRIMITIVE = 'primitive',
@@ -42,7 +42,7 @@ export function validateWhereField(where: CrudRequestWhereField): void {
   const name = 'The value of the operator ' + where.operator;
 
   if (type === WhereOperatorValueType.PRIMITIVE) {
-    ensurePrimitive(name, where.value);
+    ensurePrimitiveOrNull(name, where.value);
 
     return;
   }
@@ -50,7 +50,7 @@ export function validateWhereField(where: CrudRequestWhereField): void {
   if (type === WhereOperatorValueType.ARRAY) {
     const items = ensureArray(name, where.value);
 
-    items.forEach(item => ensurePrimitive(name + ' children', item));
+    items.forEach(item => ensurePrimitiveOrNull(name + ' children', item));
 
     return;
   }
