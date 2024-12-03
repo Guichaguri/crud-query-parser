@@ -20,12 +20,15 @@
   "scripts": {
     "build": "tsup",
     "prepublishOnly": "npm run build",
-    "sample:typeorm": "ts-node ./samples/typeorm/index.ts",
-    "sample:dynamodb": "ts-node ./samples/dynamodb/index.ts"
+    "sample:array": "ts-node ./samples/array/index.ts",
+    "sample:dynamodb": "ts-node ./samples/dynamodb/index.ts",
+    "sample:typeorm": "ts-node ./samples/typeorm/index.ts"
   },
   "tsup": {
     "entry": [
       "src/index.ts",
+      "src/adapters/array/index.ts",
+      "src/adapters/dynamodb/index.ts",
       "src/adapters/typeorm/index.ts",
       "src/parsers/crud/index.ts",
       "src/helpers/nestjs/index.ts",
@@ -63,14 +66,14 @@
         "types": "./dist/index.d.ts"
       }
     },
-    "./adapters/typeorm": {
+    "./adapters/array": {
       "import": {
-        "default": "./dist/adapters/typeorm/index.mjs",
-        "types": "./dist/adapters/typeorm/index.d.mts"
+        "default": "./dist/adapters/array/index.mjs",
+        "types": "./dist/adapters/array/index.d.mts"
       },
       "require": {
-        "default": "./dist/adapters/typeorm/index.js",
-        "types": "./dist/adapters/typeorm/index.d.ts"
+        "default": "./dist/adapters/array/index.js",
+        "types": "./dist/adapters/array/index.d.ts"
       }
     },
     "./adapters/dynamodb": {
@@ -81,6 +84,16 @@
       "require": {
         "default": "./dist/adapters/dynamodb/index.js",
         "types": "./dist/adapters/dynamodb/index.d.ts"
+      }
+    },
+    "./adapters/typeorm": {
+      "import": {
+        "default": "./dist/adapters/typeorm/index.mjs",
+        "types": "./dist/adapters/typeorm/index.d.mts"
+      },
+      "require": {
+        "default": "./dist/adapters/typeorm/index.js",
+        "types": "./dist/adapters/typeorm/index.d.ts"
       }
     },
     "./parsers/crud": {
@@ -144,6 +157,7 @@
     "@nestjs/common": "^10.3.9",
     "@nestjs/swagger": "^7.3.1",
     "@types/better-sqlite3": "^7.6.11",
+    "@types/express": "^5.0.0",
     "@types/node": "^17.0.23",
     "better-sqlite3": "^9.6.0",
     "reflect-metadata": "^0.2.2",

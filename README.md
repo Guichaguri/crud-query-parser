@@ -53,9 +53,9 @@ const parser = new CrudRequestParser();
 This adapter works with TypeORM 0.3.x and 0.2.x
 
 ```ts
-import { TypeormQueryAdapter } from 'crud-query-parser/adapters/typeorm';
+import { TypeOrmQueryAdapter } from 'crud-query-parser/adapters/typeorm';
 
-const adapter = new TypeormQueryAdapter();
+const adapter = new TypeOrmQueryAdapter();
 
 // Then, you can pass a query builder to it:
 // const result = await adapter.getMany(repository.createQueryBuilder(), crudRequest);
@@ -88,6 +88,24 @@ The DynamoDB has the following caveats:
   - Any case-insensitive operator (e.g. `EQ_LOWER`, `CONTAINS_LOWER`, `STARTS_LOWER` and so on)
   - Ends With (`ENDS`)
 
+### Array
+
+This adapter can filter, sort and map plain JS arrays.
+
+```ts
+import { ArrayQueryAdapter } from 'crud-query-parser/adapters/array';
+
+const adapter = new ArrayQueryAdapter();
+
+// Then, you can pass an array of entities to it:
+// const result = await adapter.getMany([], crudRequest);
+```
+
+The array adapter has the following caveats:
+- Passing a select list makes it create new objects containing only the select fields. An empty select list makes it return the objects as-is.
+  - This can be changed by passing the `createEmptyEntity` option.
+- Relations are completely ignored
+
 ## Helpers
 
 ### NestJS
@@ -117,7 +135,7 @@ export class UserController {
 @Injectable()
 export class UserService {
 
-  protected crudAdapter = new TypeormQueryAdapter();
+  protected adapter = new TypeOrmQueryAdapter();
 
   constructor(
     @InjectRepository(UserEntity)
@@ -125,9 +143,38 @@ export class UserService {
   ) {}
   
   public async getMany(crudRequest: CrudRequest) {
-    return await this.crudAdapter.getMany(this.repository.createQueryBuilder(), crudRequest);
+    return await this.adapter.getMany(this.repository.createQueryBuilder(), crudRequest);
   }
 
+}
+```
+
+### Express
+
+The Express integration has a middleware that automatically parses and memoizes the request.
+
+Sample code:
+
+```ts
+const app = express();
+
+app.use(crud(CrudRequestParser));
+
+app.get('/users', (req, res) => {
+  const crudRequest = req.getCrudRequest();
+
+  getManyUsers(crudRequest)
+    .then(result => res.json(result))
+    .catch(error => res.json({ error: error }));
+});
+```
+
+```ts
+const adapter = new TypeOrmQueryAdapter();
+const repository = AppDataSource.getRepository(UserEntity);
+
+export async function getManyUsers(crudRequest: CrudRequest) {
+  return await adapter.getMany(repository.createQueryBuilder(), crudRequest);
 }
 ```
 
