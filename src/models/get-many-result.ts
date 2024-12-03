@@ -17,7 +17,7 @@ export interface GetManyResult<T> {
   total: number;
 
   /**
-   * The current page number
+   * The current page number, starting at 1
    */
   page: number;
 
