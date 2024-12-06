@@ -34,4 +34,4 @@ const result = await adapter.getMany(entities, crudRequest);
 
 - Relations are completely ignored.
 - Passing a select list makes it create new objects containing only the select fields. An empty select list makes it return the objects as-is.
-  - This can be changed by passing the `createEmptyEntity` option.
+  - The creation of the new object can be changed by passing the `createEmptyEntity` option.

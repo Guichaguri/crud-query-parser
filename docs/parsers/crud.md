@@ -13,6 +13,27 @@ const parser = new CrudRequestParser();
 const crudRequest = parser.parse(request.query);
 ```
 
+## Options
+
+```ts
+const parser = new CrudRequestParser({
+  // Whether the `fields` and `select` parameters will be disabled
+  disableSelect: false,
+  // Whether the `s`, `filter` and `or` parameters will be disabled
+  disableWhere: false,
+  // Whether the `sort` parameter will be disabled
+  disableOrder: false,
+  // Whether the `join` parameter will be disabled
+  disableRelations: false,
+  // Whether the `limit` and `per_page` parameters will be disabled
+  disableLimit: false,
+  // Whether the `offset` and `page` parameters will be disabled
+  disableOffset: false,
+});
+```
+
+You can disable parameters if you wish to do so. For instance, you might want to disable order, limit and offset for getOne() calls.
+
 ## Query Parameters
 
 ### Select Fields (`fields`)
@@ -20,7 +41,7 @@ const crudRequest = parser.parse(request.query);
 Let you list which fields will be returned by the query.
 Adds a "SELECT" to the query.
 
-Syntax: `?field=id,title,description`
+- Syntax: `?fields=id,title,description`
 
 ### Sort
 
@@ -79,8 +100,8 @@ Adds a "WHERE" filter.
 - `$excl`: not contains (`NOT LIKE %val%`)
 - `$in`: in range, accepts an array of values (`IN`)
 - `$notin`: not in range, accepts an array of values (`NOT IN`)
-- `$isnull`: is NULL (`IS NULL`)
-- `$notnull`: not NULL (`IS NOT NULL`)
+- `$isnull`: is null (`IS NULL`)
+- `$notnull`: not null (`IS NOT NULL`)
 - `$between`: between, accepts an array of two values (`BETWEEN`)
 - `$eqL`: equal lowercase (`LOWER(field) =`)
 - `$neL`: not equal lowercase (`LOWER(field) !=`)

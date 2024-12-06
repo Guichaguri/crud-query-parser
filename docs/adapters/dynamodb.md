@@ -48,8 +48,8 @@ const result = await adapter.getMany<Post>({}, crudRequest);
 
 The command is determined by whether the top-level where conditions contain primary keys.
 
-- If the full primary key is present, it will run the `GetItem` command.
-- If the parittion key is present, it will run the `Query` command.
+- If the full primary key is present but not any other filter, it will run the `GetItem` command.
+- If the partition key is present, it will run the `Query` command.
 - Otherwise, it will run the `Scan` command.
 
 The "primary key" is either a combination of the partition key and the sort key, or just the partition key if the table doesn't have a sort key.
