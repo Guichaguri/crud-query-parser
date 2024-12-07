@@ -222,8 +222,8 @@ export class ArrayQueryAdapter<T extends object> implements QueryAdapter<T[], T>
       case CrudRequestWhereOperator.BETWEEN:
         const arr = ensureArray('BETWEEN operator', value, 2);
 
-        return item > ensurePrimitive('left BETWEEN value', arr[0]) &&
-          item < ensurePrimitive('right BETWEEN value', arr[1]);
+        return item >= ensurePrimitive('left BETWEEN value', arr[0]) &&
+          item <= ensurePrimitive('right BETWEEN value', arr[1]);
 
       case CrudRequestWhereOperator.IS_NULL:
         return !isValid(item);
