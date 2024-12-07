@@ -14,7 +14,7 @@ export interface QueryAdapter<T, BaseEntity = any> {
    * @param baseQuery The base query to start of
    * @param request The parsed request object
    */
-  build<E extends BaseEntity>(baseQuery: T, request: CrudRequest): T;
+  build(baseQuery: T, request: CrudRequest): T;
 
   /**
    * Fetches one entity based on a parsed request object

@@ -1,5 +1,3 @@
-import { CrudRequestFields } from '../models/crud-request';
-
 export function ensurePrimitive(fieldName: string, data: any): number | string | boolean | Date {
   if (typeof data === 'number' || typeof data === 'string' || typeof data === 'boolean' || data instanceof Date)
     return data;
@@ -54,4 +52,8 @@ export function createInstance<T extends object>(clazzOrInstance: T | Type<T> | 
     return clazzOrInstance as T;
 
   return undefined;
+}
+
+export function escapeRegex(str: string): string {
+  return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
