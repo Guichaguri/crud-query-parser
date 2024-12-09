@@ -1,18 +1,10 @@
 # TypeORM Adapter
 
-It adapts TypeORM QueryBuilders and runs queries.
+The TypeORM adapter builds QueryBuilders and runs queries.
 
 It supports [TypeORM](https://www.npmjs.com/package/typeorm) versions 0.2.+ and 0.3.+.
 
-## Getting Started
-
-Install crud-query-parser
-
-```sh
-npm i crud-query-parser
-```
-
-Here's an example on how to use it:
+## Usage
 
 ```ts
 import { TypeOrmQueryAdapter } from 'crud-query-parser/adapters/typeorm';

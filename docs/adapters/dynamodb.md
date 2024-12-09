@@ -6,10 +6,9 @@ It requires both [@aws-sdk/client-dynamodb](https://www.npmjs.com/package/@aws-s
 
 ## Getting Started
 
-Install crud-query-parser and the AWS SDK for DynamoDB
+Install the AWS SDK for DynamoDB
 
 ```sh
-npm i crud-query-parser
 npm i @aws-sdk/client-dynamodb @aws-sdk/util-dynamodb
 ```
 
@@ -65,4 +64,4 @@ The `getMany()` method also fetches the total count of items which costs extra r
   - Any case-insensitive operator (e.g. `EQ_LOWER`, `CONTAINS_LOWER`, `STARTS_LOWER` and so on)
   - Ends With (`ENDS`)
 - Relations are completely ignored as DynamoDB is a NoSQL database.
-- Ordering is only supported for the sort key in a Query command.
+- Ordering is only supported for the sort key in a `Query` command.

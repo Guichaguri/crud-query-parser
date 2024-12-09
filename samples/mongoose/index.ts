@@ -1,10 +1,11 @@
+import * as mongoose from 'mongoose';
 import { CrudRequestParser } from '../../src/parsers/crud';
-import { MongoDBQueryAdapter } from '../../src/adapters/mongodb';
-import { client, posts } from './schema';
+import { MongooseQueryAdapter } from '../../src/adapters/mongodb';
+import { Post } from './schema';
 import { setup } from './setup';
 
 const parser = new CrudRequestParser();
-const adapter = new MongoDBQueryAdapter();
+const adapter = new MongooseQueryAdapter();
 
 async function run() {
   await setup();
@@ -19,11 +20,11 @@ async function run() {
 
   console.dir(request, { depth: 5 });
 
-  const data = await adapter.getMany(posts, request);
+  const data = await adapter.getMany(Post.find(), request);
 
   console.dir(data, { depth: 5 });
 }
 
 run()
-  .finally(() => client.close())
+  .finally(() => mongoose.disconnect())
   .catch(error => console.error(error));

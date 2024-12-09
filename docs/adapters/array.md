@@ -1,17 +1,8 @@
 # Array Adapter
 
-You may want to work on an array with crud requests.
-This is the adapter that filters, sorts and maps a plain JS array based on the given query.
+This adapter allows working directly with JS arrays instead of databases. The adapter filters, sorts and maps a plain JS array based on the given request.
 
-## Getting Started
-
-Install crud-query-parser
-
-```sh
-npm i crud-query-parser
-```
-
-Here's an example on how to use it:
+## Usage
 
 ```ts
 import { ArrayQueryAdapter } from 'crud-query-parser/adapters/array';

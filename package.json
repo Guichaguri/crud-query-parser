@@ -26,6 +26,7 @@
     "sample:array": "ts-node ./samples/array/index.ts",
     "sample:dynamodb": "ts-node ./samples/dynamodb/index.ts",
     "sample:mongodb": "ts-node ./samples/mongodb/index.ts",
+    "sample:mongoose": "ts-node ./samples/mongoose/index.ts",
     "sample:typeorm": "ts-node ./samples/typeorm/index.ts"
   },
   "tsup": {
@@ -180,6 +181,7 @@
     "@types/node": "^17.0.23",
     "better-sqlite3": "^9.6.0",
     "mongodb": "^5.9.2",
+    "mongoose": "^8.8.4",
     "reflect-metadata": "^0.2.2",
     "ts-node": "^10.9.2",
     "tsup": "^8.1.0",
