@@ -2,7 +2,7 @@ import { RequestParamValue, RequestParser } from '../../models/request-parser';
 import { CrudRequest, CrudRequestOrder, CrudRequestRelation, ParsedRequestSelect } from '../../models/crud-request';
 import { OpenAPIParameter } from '../../models/openapi-parameter';
 import { CrudRequestWhereBuilder } from '../../utils/crud-request-where.builder';
-import { getParamJSON, getParamNumber, getParamStringArray } from '../../utils/parser';
+import { createParamGetter, getParamJSON, getParamNumber, getParamStringArray } from '../../utils/parser';
 import { parseCrudFilters, parseCrudSearch } from './parseCrudSearch';
 import { SCondition } from './types';
 
@@ -138,27 +138,29 @@ export class CrudRequestParser implements RequestParser {
     return params;
   }
 
-  public parse(query: Record<string, RequestParamValue>): CrudRequest {
+  public parse(query: Record<string, RequestParamValue> | URLSearchParams): CrudRequest {
+    const get = createParamGetter(query);
+
     const select: ParsedRequestSelect = [];
     const relations: CrudRequestRelation[] = [];
     const ordering: CrudRequestOrder[] = [];
     const where = new CrudRequestWhereBuilder();
 
     if (!this.options.disableSelect)
-      this.parseSelect(select, query['fields'] || query['select']);
+      this.parseSelect(select, get('fields') || get('select'));
 
     if (!this.options.disableRelations)
-      this.parseJoin(select, relations, query['join']);
+      this.parseJoin(select, relations, get('join'));
 
     if (!this.options.disableOrder)
-      this.parseOrder(ordering, query['sort']);
+      this.parseOrder(ordering, get('sort'));
 
     if (!this.options.disableWhere)
-      this.parseSearch(where, query['s'], query['filter'], query['or']);
+      this.parseSearch(where, get('s'), get('filter'), get('or'));
 
-    const limit = this.options.disableLimit ? undefined : getParamNumber(query['limit'] || query['per_page']);
-    const offset = this.options.disableOffset ? undefined : getParamNumber(query['offset']);
-    const page = this.options.disableOffset ? undefined : getParamNumber(query['page']);
+    const limit = this.options.disableLimit ? undefined : getParamNumber(get('limit') || get('per_page'));
+    const offset = this.options.disableOffset ? undefined : getParamNumber(get('offset'));
+    const page = this.options.disableOffset ? undefined : getParamNumber(get('page'));
 
     return {
       select,

@@ -1,6 +1,14 @@
 import { RequestParamValue } from '../models/request-parser';
 import { isValid } from './functions';
 
+export function createParamGetter(query: Record<string, RequestParamValue> | URLSearchParams): (name: string) => RequestParamValue {
+  if (query instanceof URLSearchParams) {
+    return query.get;
+  }
+
+  return (name: string) => query[name];
+}
+
 export function getParamString(value: RequestParamValue): string | undefined {
   if (Array.isArray(value))
     value = value[0];
