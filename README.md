@@ -2,6 +2,17 @@
 
 This library parses HTTP requests and converts them to TypeORM query builders, allowing advanced filtering, column selection, pagination and relations.
 
+## Features
+
+- Supports the `@nestjsx/crud` query parameter syntax
+- TypeORM support
+- MongoDB and Mongoose support
+- DynamoDB support
+- JS arrays support
+- Flexible request manipulation
+- NestJS support
+- Express support
+
 ## Install
 
 ```sh
@@ -10,21 +21,32 @@ npm install crud-query-parser
 
 ## Usage
 
+```mermaid
+flowchart LR
+    A(RequestParser) --> B(Filters) --> C(QueryAdapter)
+```
+
 You have to pick a request parser and a query adapter.
 
 ```ts
+const parser = new CrudRequestParser();
+const adapter = new TypeOrmQueryAdapter();
 const userRepository = AppDataSource.getRepository(UserEntity); // TypeORM repository
 
 // ...
 
 // The request query object
 // This object will likely come from the HTTP request
-const requestQuery = { ... };  
+const requestQuery = { ... };
 
 // Parses the query into a CrudRequest object
-const crudRequest = parser.parse(requestQuery);
+let crudRequest = parser.parse(requestQuery);
 
-// Using the query adapter, you can query in your ORM from the CrudRequest
+// Apply filters
+// crudRequest = filterRelations(crudRequest, ['posts']);
+// crudRequest = ensureLimit(crudRequest, 25, 100);
+
+// Using the query adapter, you can run the query through your ORM by using the CrudRequest
 const result = await adapter.getMany(userRepository.createQueryBuilder(), crudRequest); // GetManyResult<UserEntity>
 
 // The result object has properties like data, page, total
@@ -33,9 +55,9 @@ console.log(result);
 
 ## Request parsers
 
-### CRUD
+### CRUD Request
 
-The CRUD parser is an implementation of the `@nestjsx/crud` [query params format](https://github.com/nestjsx/crud/wiki/Requests#query-params).
+The CRUD Request parser is an implementation of the `@nestjsx/crud` [query params format](https://github.com/nestjsx/crud/wiki/Requests#query-params).
 
 ```ts
 import { CrudRequestParser } from 'crud-query-parser/parsers/crud';
@@ -45,6 +67,8 @@ const parser = new CrudRequestParser();
 // Then, you have to pass a query string object to it
 // const crudRequest = parser.parse(request.query);
 ```
+
+Read more about the [CRUD Request parser](./docs/parsers/crud.md).
 
 ## Database adapters
 
@@ -60,6 +84,8 @@ const adapter = new TypeOrmQueryAdapter();
 // Then, you can pass a query builder to it:
 // const result = await adapter.getMany(repository.createQueryBuilder(), crudRequest);
 ```
+
+Read more about the [TypeORM adapter](./docs/adapters/typeorm.md).
 
 ### DynamoDB
 
@@ -79,14 +105,33 @@ const adapter = new DynamoDBQueryAdapter({
 // const result = await adapter.getMany({}, crudRequest);
 ```
 
-The DynamoDB has the following caveats:
-- Pagination is not supported (both `page` and `offset` parameters are ignored)
-- A Query command is used instead of a Scan command if the where filter has a top-level condition for the partition key.
-- Ordering is only supported for the sort key in a Query command.
-- Relations are completely ignored as DynamoDB is a NoSQL database.
-- The following where operators are not supported in DynamoDB:
-  - Any case-insensitive operator (e.g. `EQ_LOWER`, `CONTAINS_LOWER`, `STARTS_LOWER` and so on)
-  - Ends With (`ENDS`)
+Read more about the [DynamoDB adapter](./docs/adapters/dynamodb.md).
+
+### MongoDB
+
+```ts
+import { MongoDBQueryAdapter } from 'crud-query-parser/adapters/mongodb';
+
+const adapter = new MongoDBQueryAdapter();
+
+// Then, you can pass a collection to it:
+// const result = await adapter.getMany(collection, crudRequest);
+```
+
+Read more about the [MongoDB adapter](./docs/adapters/mongodb.md).
+
+### Mongoose
+
+```ts
+import { MongooseQueryAdapter } from 'crud-query-parser/adapters/mongodb';
+
+const adapter = new MongooseQueryAdapter();
+
+// Then, you can pass a Query to it:
+// const result = await adapter.getMany(Model.find(), crudRequest);
+```
+
+Read more about the [Mongoose adapter](./docs/adapters/mongodb.md).
 
 ### Array
 
@@ -101,10 +146,7 @@ const adapter = new ArrayQueryAdapter();
 // const result = await adapter.getMany([], crudRequest);
 ```
 
-The array adapter has the following caveats:
-- Passing a select list makes it create new objects containing only the select fields. An empty select list makes it return the objects as-is.
-  - This can be changed by passing the `createEmptyEntity` option.
-- Relations are completely ignored
+Read more about the [array adapter](./docs/adapters/array.md).
 
 ## Helpers
 
@@ -112,71 +154,40 @@ The array adapter has the following caveats:
 
 The NestJS integration has OpenAPI support and decorators that automatically parses the request.
 
-Sample code:
-
 ```ts
+import { Crud, ParseCrudRequest } from 'crud-query-parser/helpers/nestjs';
+import { CrudRequestParser } from 'crud-query-parser/parsers/crud';
+
 @Controller('users')
 export class UserController {
-
-  constructor(
-    private service: UserService,
-  ) {}
 
   @Get()
   @Crud(CrudRequestParser) // <- You specify which parser to use
   public async getMany(@ParseCrudRequest() crudRequest: CrudRequest) { // <- The request query will be automatically parsed
-    return this.service.getMany(crudRequest);
+    // ...
   }
 
 }
 ```
 
-```ts
-@Injectable()
-export class UserService {
-
-  protected adapter = new TypeOrmQueryAdapter();
-
-  constructor(
-    @InjectRepository(UserEntity)
-    private repository: Repository<UserEntity>,
-  ) {}
-  
-  public async getMany(crudRequest: CrudRequest) {
-    return await this.adapter.getMany(this.repository.createQueryBuilder(), crudRequest);
-  }
-
-}
-```
+Read more about the [NestJS helper](./docs/helpers/nestjs.md).
 
 ### Express
 
 The Express integration has a middleware that automatically parses and memoizes the request.
 
-Sample code:
-
 ```ts
-const app = express();
+import { crud } from 'crud-query-parser/helpers/express';
+import { CrudRequestParser } from 'crud-query-parser/parsers/crud';
 
-app.use(crud(CrudRequestParser));
-
-app.get('/users', (req, res) => {
+app.get('/users', crud(CrudRequestParser), (req, res) => {
   const crudRequest = req.getCrudRequest();
 
-  getManyUsers(crudRequest)
-    .then(result => res.json(result))
-    .catch(error => res.json({ error: error }));
+  // ...
 });
 ```
 
-```ts
-const adapter = new TypeOrmQueryAdapter();
-const repository = AppDataSource.getRepository(UserEntity);
-
-export async function getManyUsers(crudRequest: CrudRequest) {
-  return await adapter.getMany(repository.createQueryBuilder(), crudRequest);
-}
-```
+Read more about the [Express helper](./docs/helpers/express.md).
 
 ## Filters
 

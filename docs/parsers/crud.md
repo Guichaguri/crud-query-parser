@@ -1,4 +1,4 @@
-# CRUD Query Parser
+# CRUD Request Parser
 
 The CRUD parser is an implementation of the `@nestjsx/crud` [query params format](https://github.com/nestjsx/crud/wiki/Requests#query-params).
 

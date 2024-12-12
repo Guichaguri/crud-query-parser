@@ -48,6 +48,9 @@ export class CrudRequestParser implements RequestParser {
   ) {
   }
 
+  /**
+   * @inheritDoc
+   */
   public getOpenAPIParameters(): OpenAPIParameter[] {
     // We'll not add the `per_page`, `filter`, `or` and `select` parameters here
     // as those are only kept for compatibility purposes and not recommended.
@@ -138,6 +141,9 @@ export class CrudRequestParser implements RequestParser {
     return params;
   }
 
+  /**
+   * @inheritDoc
+   */
   public parse(query: Record<string, RequestParamValue> | URLSearchParams): CrudRequest {
     const get = createParamGetter(query);
 
@@ -173,6 +179,12 @@ export class CrudRequestParser implements RequestParser {
     };
   }
 
+  /**
+   * Parses the select query parameter
+   *
+   * @param select The parsed select array
+   * @param rawSelect The query parameter
+   */
   protected parseSelect(select: ParsedRequestSelect, rawSelect: RequestParamValue): void {
     const selectFields = getParamStringArray(rawSelect, ',');
 
@@ -183,6 +195,13 @@ export class CrudRequestParser implements RequestParser {
     });
   }
 
+  /**
+   * Parses the join query parameter
+   *
+   * @param requestFields The parsed select array
+   * @param relations The parsed relations array
+   * @param rawJoin The query parameter
+   */
   protected parseJoin(requestFields: ParsedRequestSelect, relations: CrudRequestRelation[], rawJoin: RequestParamValue): void {
     const joins = getParamStringArray(rawJoin);
 
@@ -206,6 +225,12 @@ export class CrudRequestParser implements RequestParser {
     }
   }
 
+  /**
+   * Parses the order query parameter
+   *
+   * @param ordering The order array
+   * @param rawOrder The query parameter
+   */
   protected parseOrder(ordering: CrudRequestOrder[], rawOrder: RequestParamValue): void {
     const order = getParamStringArray(rawOrder);
 
@@ -219,6 +244,14 @@ export class CrudRequestParser implements RequestParser {
     }
   }
 
+  /**
+   * Parses the search query parameter
+   *
+   * @param builder The condition builder
+   * @param rawSearch The "search" query parameter
+   * @param rawFilter The "filter" query parameter
+   * @param rawOr The "or" query parameter
+   */
   protected parseSearch(builder: CrudRequestWhereBuilder, rawSearch: RequestParamValue, rawFilter: RequestParamValue, rawOr: RequestParamValue): void {
     const search = getParamJSON<SCondition>(rawSearch);
 
@@ -231,6 +264,13 @@ export class CrudRequestParser implements RequestParser {
     parseCrudSearch(builder, search);
   }
 
+  /**
+   * Parses the filter query parameter
+   *
+   * @param builder The condition builder
+   * @param rawFilter The "filter" query parameter
+   * @param rawOr The "or" query parameter
+   */
   protected parseFilter(builder: CrudRequestWhereBuilder, rawFilter: RequestParamValue, rawOr: RequestParamValue): void {
     const andFilters = getParamStringArray(rawFilter);
     const orFilters = getParamStringArray(rawOr);

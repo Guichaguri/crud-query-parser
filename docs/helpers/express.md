@@ -12,20 +12,21 @@ import { CrudRequest } from 'crud-query-parser';
 
 const app = express();
 
-// Register the middleware only for this endpoint
+// Register the middleware for this endpoint
 app.get('/users', crud(CrudRequestParser), (req, res) => {
   const crudRequest = req.getCrudRequest();
-  
-  // ...
+
+  getManyUsers(crudRequest)
+    .then(result => res.json(result))
+    .catch(error => res.json({ error: error }));
 });
+```
 
-// ---- OR ----
+```ts
+const adapter = new TypeOrmQueryAdapter();
+const repository = AppDataSource.getRepository(UserEntity);
 
-// Register for all routes in app
-app.use(crud(CrudRequestParser));
-app.get('/users', (req, res) => {
-  const crudRequest = req.getCrudRequest();
-
-  // ...
-});
+export async function getManyUsers(crudRequest: CrudRequest) {
+  return await adapter.getMany(repository.createQueryBuilder(), crudRequest);
+}
 ```

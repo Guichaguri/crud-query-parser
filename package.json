@@ -37,6 +37,7 @@
       "src/adapters/mongodb/index.ts",
       "src/adapters/typeorm/index.ts",
       "src/parsers/crud/index.ts",
+      "src/helpers/express/index.ts",
       "src/helpers/nestjs/index.ts",
       "src/filters/index.ts"
     ],
@@ -120,6 +121,16 @@
       "require": {
         "default": "./dist/parsers/crud/index.js",
         "types": "./dist/parsers/crud/index.d.ts"
+      }
+    },
+    "./helpers/express": {
+      "import": {
+        "default": "./dist/helpers/express/index.mjs",
+        "types": "./dist/helpers/express/index.d.mts"
+      },
+      "require": {
+        "default": "./dist/helpers/express/index.js",
+        "types": "./dist/helpers/express/index.d.ts"
       }
     },
     "./helpers/nestjs": {

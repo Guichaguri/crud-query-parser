@@ -11,8 +11,6 @@ It should be used alongside `@ParseCrudRequest()`.
 
 This decorator can be added to a controller method parameter in order to bind the parsed `CrudRequest`.
 
-It should be used alongside `@Crud()`.
-
 ## Usage
 
 ```ts
@@ -32,10 +30,10 @@ export class PostController {
   @Get(':id')
   @Crud(new CrudRequestParser({
     // You can customize which parameters you want to disable
-    disableWhere: false,
-    disableOrder: false,
-    disableLimit: false,
-    disableOffset: false,
+    disableWhere: true,
+    disableOrder: true,
+    disableLimit: true,
+    disableOffset: true,
   }))
   public async getOne(
     @Param('id') id: string,

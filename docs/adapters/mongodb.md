@@ -1,6 +1,6 @@
 # MongoDB Adapter
 
-The MongoDB Adapter generates and executes `find()` queries. It supports the [official MongoDB driver](https://www.npmjs.com/package/mongodb) and also [Mongoose](https://www.npmjs.com/package/mongoose).
+The MongoDB Adapter generates and executes `find()` queries. It supports the [official MongoDB driver](https://www.npmjs.com/package/mongodb) and [Mongoose](https://www.npmjs.com/package/mongoose).
 
 This adapter also works with [Amazon DocumentDB](https://aws.amazon.com/documentdb/) and [Azure Cosmos DB for MongoDB](https://learn.microsoft.com/en-us/azure/cosmos-db/mongodb/introduction).
 
