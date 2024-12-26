@@ -1,17 +1,25 @@
 # crud-query-parser
 
-This library parses HTTP requests and converts them to TypeORM query builders, allowing advanced filtering, column selection, pagination and relations.
+[![NPM](https://img.shields.io/npm/v/crud-query-parser)](https://www.npmjs.com/package/crud-query-parser)
+
+This library parses query parameters from HTTP requests and converts them to database queries, allowing advanced filtering, column selection, pagination and relation joining.
 
 ## Features
 
+- Modular architecture, framework-agnostic
 - Supports the `@nestjsx/crud` query parameter syntax
-- TypeORM support
-- MongoDB and Mongoose support
-- DynamoDB support
-- JS arrays support
-- Flexible request manipulation
-- NestJS support
-- Express support
+- Flexible request manipulation and filtering
+- [TypeORM support](./docs/adapters/typeorm.md)
+- [MongoDB and Mongoose support](./docs/adapters/mongodb.md)
+- [DynamoDB support](./docs/adapters/dynamodb.md)
+- [JS arrays support](./docs/adapters/array.md)
+- [NestJS support](./docs/frameworks/nestjs.md)
+- [NextJS support](./docs/frameworks/nextjs.md)
+- [Express support](./docs/frameworks/express.md)
+- [Fastify support](./docs/frameworks/fastify.md)
+- [h3 support](./docs/frameworks/h3.md)
+- [tinyhttp support](./docs/frameworks/tinyhttp.md)
+- [http package support](./docs/frameworks/nodejs-http.md)
 
 ## Install
 
@@ -148,11 +156,22 @@ const adapter = new ArrayQueryAdapter();
 
 Read more about the [array adapter](./docs/adapters/array.md).
 
-## Helpers
+## Frameworks
 
-### NestJS
+crud-query-parser is framework-agnostic. You can pass any query parameters object to the parser and it should work out-of-the-box.
+However, we have a few helpers or examples for the frameworks listed below:
 
-The NestJS integration has OpenAPI support and decorators that automatically parses the request.
+- [NestJS](./docs/frameworks/nestjs.md)
+- [NextJS](./docs/frameworks/nextjs.md)
+- [Express](./docs/frameworks/express.md)
+- [Fastify](./docs/frameworks/fastify.md)
+- [h3](./docs/frameworks/h3.md)
+- [tinyhttp](./docs/frameworks/tinyhttp.md)
+- [Node.js http](./docs/frameworks/nodejs-http.md)
+
+### NestJS helper
+
+The NestJS helper has OpenAPI support and decorators that automatically parses the request.
 
 ```ts
 import { Crud, ParseCrudRequest } from 'crud-query-parser/helpers/nestjs';
@@ -172,9 +191,9 @@ export class UserController {
 
 Read more about the [NestJS helper](docs/frameworks/nestjs.md).
 
-### Express
+### Express helper
 
-The Express integration has a middleware that automatically parses and memoizes the request.
+The Express helper has a middleware that automatically parses and memoizes the request.
 
 ```ts
 import { crud } from 'crud-query-parser/helpers/express';
