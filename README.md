@@ -170,7 +170,7 @@ export class UserController {
 }
 ```
 
-Read more about the [NestJS helper](./docs/helpers/nestjs.md).
+Read more about the [NestJS helper](docs/frameworks/nestjs.md).
 
 ### Express
 
@@ -187,7 +187,7 @@ app.get('/users', crud(CrudRequestParser), (req, res) => {
 });
 ```
 
-Read more about the [Express helper](./docs/helpers/express.md).
+Read more about the [Express helper](docs/frameworks/express.md).
 
 ## Filters
 

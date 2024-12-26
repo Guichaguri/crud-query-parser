@@ -1,19 +1,23 @@
-# NestJS Helper
+# NestJS Support
 
-## `@Crud()`
+## With Decorators
+
+### `@Crud()`
 
 This decorator can be added to a controller method in order to define which parser will be enabled.
 It also adds the OpenAPI metadata for the query parameters.
 
 It should be used alongside `@ParseCrudRequest()`.
 
-## `@ParseCrudRequest()`
+### `@ParseCrudRequest()`
 
 This decorator can be added to a controller method parameter in order to bind the parsed `CrudRequest`.
 
-## Usage
+### Usage
 
 ```ts
+import { Crud, ParseCrudRequest } from 'crud-query-parser/helpers/nestjs';
+
 @Controller('posts')
 export class PostController {
 
@@ -66,5 +70,65 @@ export class UserService {
     return await this.adapter.getOne(this.repository.createQueryBuilder(), crudRequest);
   }
 
+}
+```
+
+## Without Decorators
+
+You can parse the query parameters manually and also do the OpenAPI/Swagger definition by yourself. Here's an example:
+
+```ts
+@Controller('posts')
+export class PostController {
+
+  constructor(
+    private service: PostService,
+  ) {}
+
+  @Get()
+  // You have to add all @ApiQuery() manually here for OpenAPI/Swagger support
+  public async getMany(@Query() query) {
+    return this.service.getMany(query);
+  }
+
+  @Get(':id')
+  // You have to add all @ApiQuery() manually here for OpenAPI/Swagger support
+  public async getOne(
+    @Param('id') id: string,
+    @Query() query,
+  ) {
+    return this.service.getOne(id, query);
+  }
+
+}
+```
+```ts
+@Injectable()
+export class UserService {
+
+  protected parser = new CrudRequestParser();
+  protected adapter = new TypeOrmQueryAdapter();
+
+  constructor(
+    @InjectRepository(UserEntity)
+    private repository: Repository<UserEntity>,
+  ) {
+  }
+
+  public async getMany(query: any) {
+    const crudRequest = this.parser.parse(query);
+    
+    return await this.adapter.getMany(this.repository.createQueryBuilder(), crudRequest);
+  }
+
+  public async getOne(id: string, query: any) {
+    const crudRequest = this.parser.parse(query);
+    
+    // Adds the id to the where condition
+    crudRequest = ensureEqCondition(crudRequest, { id });
+
+    return await this.adapter.getOne(this.repository.createQueryBuilder(), crudRequest);
+  }
+  
 }
 ```
