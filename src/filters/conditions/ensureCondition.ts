@@ -14,8 +14,8 @@ export function ensureCondition(request: CrudRequest, condition: CrudRequestWher
       ...request,
       where: {
         and: [
-          ...request.where.and,
           condition,
+          ...request.where.and,
         ]
       }
     }

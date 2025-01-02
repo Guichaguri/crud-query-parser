@@ -20,7 +20,7 @@ export function filterProperties(
     select = request.select.filter(item => allowedProperties.includes(item.field.join('.')));
   }
 
-  const where = filterPropertyAccessWhere(request.where, allowedProperties);
+  const where = filterPropertyAccessWhere(request.where, allowedProperties) ?? { and: [] };
 
   const order = request.order.filter(item => allowedProperties.includes(item.field.join('.')));
 
@@ -39,23 +39,27 @@ export function filterProperties(
 function filterPropertyAccessWhere(
   where: CrudRequestWhere,
   allowedProperties: string[],
-): CrudRequestWhere {
+): CrudRequestWhere | undefined {
   if (where.or) {
     return {
-      or: where.or.map(w => filterPropertyAccessWhere(w, allowedProperties)),
+      or: where.or
+        .map(w => filterPropertyAccessWhere(w, allowedProperties))
+        .filter(w => !!w),
     };
   }
 
   if (where.and) {
     return {
-      and: where.and.map(w => filterPropertyAccessWhere(w, allowedProperties)),
+      and: where.and
+        .map(w => filterPropertyAccessWhere(w, allowedProperties))
+        .filter(w => !!w),
     };
   }
 
   if (where.field) {
     // We'll return an empty AND where if the field is not allowed
     if (!allowedProperties.includes(where.field.join('.')))
-      return { and: [] };
+      return undefined;
   }
 
   return where;
