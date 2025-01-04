@@ -9,7 +9,7 @@ export interface ArrayQueryAdapterOptions<T> {
   /**
    * Creates an empty entity.
    * This will be called when the request `select` list is not empty.
-   * This can be used to instanciate an entity class.
+   * This can be used to instantiate an entity class.
    * If not defined, it will create a plain object instead.
    *
    * @param existing The existing entity, which will be replaced by the created one
@@ -248,16 +248,16 @@ export class ArrayQueryAdapter<T extends object> implements QueryAdapter<T[], T>
           item.endsWith(ensureString('ENDS', value));
 
       case CrudRequestWhereOperator.IN:
-        return Array.isArray(item) ? item.includes(ensurePrimitive('IN', value)) : false;
+        return ensureArray('IN', value).includes(item);
 
       case CrudRequestWhereOperator.NOT_IN:
-        return Array.isArray(item) ? !item.includes(ensurePrimitive('NOT IN', value)) : true;
+        return !ensureArray('NOT IN', value).includes(item);
 
       case CrudRequestWhereOperator.EQ_LOWER:
-        return ensureString('== LOWER', item).toLowerCase() == value?.toString().toLowerCase();
+        return item?.toString().toLowerCase() == ensureString('== LOWER', value).toLowerCase();
 
       case CrudRequestWhereOperator.NEQ_LOWER:
-        return ensureString('!= LOWER', item).toLowerCase() != value?.toString().toLowerCase();
+        return item?.toString().toLowerCase() != ensureString('!= LOWER', value).toLowerCase();
 
       case CrudRequestWhereOperator.CONTAINS_LOWER:
         return typeof item !== 'string' ? false :
@@ -276,19 +276,18 @@ export class ArrayQueryAdapter<T extends object> implements QueryAdapter<T[], T>
           item.toLowerCase().endsWith(ensureString('ENDS LOWER', value).toLowerCase());
 
       case CrudRequestWhereOperator.IN_LOWER: {
-        const val = ensureString('IN LOWER', value).toLowerCase();
+        const val = item?.toString().toLowerCase();
 
-        return Array.isArray(item) ? item.some(elem => val === elem?.toString().toLowerCase()) : false;
+        return ensureArray('IN LOWER', value).some(elem => val === elem?.toString().toLowerCase());
       }
 
       case CrudRequestWhereOperator.NOT_IN_LOWER: {
-        const val = ensureString('NOT IN LOWER', value).toLowerCase();
+        const val = item?.toString().toLowerCase();
 
-        return Array.isArray(item) ? !item.some(elem => val === elem?.toString().toLowerCase()) : true;
+        return !ensureArray('NOT IN LOWER', value).some(elem => val === elem?.toString().toLowerCase());
       }
-
-      default:
-        throw new Error(`Unsupported operator "${operator}"`);
     }
+
+    throw new Error(`Unsupported operator "${operator}"`);
   }
 }
