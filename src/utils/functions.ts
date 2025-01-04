@@ -19,7 +19,7 @@ export function ensureString(fieldName: string, data: any): string {
   if (typeof data === 'string')
     return data;
 
-  throw new Error(`${fieldName} must be a string, number or boolean`);
+  throw new Error(`${fieldName} must be a string`);
 }
 
 export function ensureArray<T>(fieldName: string, data: T[] | any, minLength: number = 0): T[] {

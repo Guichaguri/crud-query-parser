@@ -33,10 +33,6 @@ const operatorValueTypes: Record<CrudRequestWhereOperator, WhereOperatorValueTyp
   [CrudRequestWhereOperator.NOT_IN_LOWER]: WhereOperatorValueType.PRIMITIVE,
 };
 
-export function getWhereOperatorValueType(op: CrudRequestWhereOperator): WhereOperatorValueType {
-  return operatorValueTypes[op];
-}
-
 export function validateWhereField(where: CrudRequestWhereField): void {
   const type = operatorValueTypes[where.operator];
   const name = 'The value of the operator ' + where.operator;

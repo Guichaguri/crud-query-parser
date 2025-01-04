@@ -3,10 +3,10 @@ import { isValid } from './functions';
 
 export function createParamGetter(query: Record<string, RequestParamValue> | URLSearchParams): (name: string) => RequestParamValue {
   if (query instanceof URLSearchParams) {
-    return query.get;
+    return query.get.bind(query);
   }
 
-  return (name: string) => query[name];
+  return (name: string) => query[name] ?? null;
 }
 
 export function getParamString(value: RequestParamValue): string | undefined {
