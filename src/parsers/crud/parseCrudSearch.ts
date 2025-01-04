@@ -3,7 +3,7 @@ import { CrudRequestWhereOperator } from '../../models/crud-request-where';
 import { SCondition, SField, SFieldOperator, SFields } from './types';
 import { isValid } from '../../utils/functions';
 
-type OperatorType = Exclude<Exclude<keyof SFieldOperator, '$or'>, '$and'>;
+type OperatorType = Exclude<keyof SFieldOperator, '$or' | '$and'>;
 
 // Operator
 // { field: { $gte: 10 } }
@@ -40,7 +40,7 @@ const operatorMap: Record<OperatorType, CrudRequestWhereOperator> = {
  * @param cond The condition that must be parsed
  * @param context The field context
  */
-export function parseCrudSearch(builder: CrudRequestWhereBuilder, cond: SCondition, context: string[] = []) {
+export function parseCrudSearch(builder: CrudRequestWhereBuilder, cond: SCondition, context: string[] = []): void {
   if (typeof cond !== 'object')
     return;
 
@@ -57,7 +57,7 @@ export function parseCrudSearch(builder: CrudRequestWhereBuilder, cond: SConditi
 
     $and.forEach(c => parseCrudSearch(andBuilder, c, context));
 
-    parseCrudSearchFields(andBuilder, innerFields as Omit<Omit<SFields, '$or'>, '$and'>, context);
+    parseCrudSearchFields(andBuilder, innerFields as Omit<SFields, '$or' | '$and'>, context);
 
     return;
   }
@@ -76,7 +76,7 @@ export function parseCrudSearch(builder: CrudRequestWhereBuilder, cond: SConditi
     const andBuilder = builder.addAnd();
     const orBuilder = $or.length > 1 ? andBuilder.addOr() : andBuilder;
 
-    parseCrudSearchFields(andBuilder, innerFields as Omit<Omit<SFields, '$or'>, '$and'>, context);
+    parseCrudSearchFields(andBuilder, innerFields as Omit<SFields, '$or' | '$and'>, context);
 
     $or.forEach(c => parseCrudSearch(orBuilder, c, context));
 
@@ -86,7 +86,7 @@ export function parseCrudSearch(builder: CrudRequestWhereBuilder, cond: SConditi
   if (keys.length > 1)
     builder = builder.addAnd();
 
-  parseCrudSearchFields(builder, innerFields as Omit<Omit<SFields, '$or'>, '$and'>, context);
+  parseCrudSearchFields(builder, innerFields as Omit<SFields, '$or' | '$and'>, context);
 }
 
 /**
@@ -96,7 +96,7 @@ export function parseCrudSearch(builder: CrudRequestWhereBuilder, cond: SConditi
  * @param fields The fields object
  * @param context The context
  */
-function parseCrudSearchFields(builder: CrudRequestWhereBuilder, fields: Omit<Omit<SFields, '$or'>, '$and'>, context: string[]): void {
+function parseCrudSearchFields(builder: CrudRequestWhereBuilder, fields: Omit<SFields, '$or' | '$and'>, context: string[]): void {
   // { name: 'John', age: { $gte: 18 }, 'posts.name': { $cont: 'Greetings' } }
   for (const name of Object.keys(fields)) {
     const field = fields[name];
@@ -140,15 +140,23 @@ function parseCrudSearchField(builder: CrudRequestWhereBuilder, name: string[], 
     builder.addField(name, operatorMap[key], field[key]);
   }
 
+  // { level: { $or: { $gt: 10, $lt: 5 } } }
   if (field.$or) {
     parseCrudSearchField(builder.addOr(), name, field.$or);
   }
 }
 
+/**
+ * Parses the legacy "filter" and "or" parameters
+ *
+ * @param builder The where builder
+ * @param andFilters The "filter" parameter
+ * @param orFilters The "or" parameter
+ */
 export function parseCrudFilters(builder: CrudRequestWhereBuilder, andFilters: string[], orFilters: string[]): void {
   // Based on rules from https://github.com/nestjsx/crud/wiki/Requests#or
   // "If present both or and filter in any amount (one or miltiple each) then both interpreted
-  // as a combitation of AND conditions and compared with each other by OR condition"
+  // as a combination of AND conditions and compared with each other by OR condition"
   // "If there are one or and one filter then it will be interpreted as OR condition"
   if (andFilters.length > 0 && orFilters.length > 0) {
     const or = builder.addOr();
@@ -159,7 +167,7 @@ export function parseCrudFilters(builder: CrudRequestWhereBuilder, andFilters: s
     return;
   }
 
-  // "If there are multiple or present (without filter) then it will be interpreted as a compination of OR conditions"
+  // "If there are multiple or present (without filter) then it will be interpreted as a combination of OR conditions"
   if (orFilters.length > 0) {
     parseCrudFilter(builder.addOr(), orFilters);
 
@@ -173,6 +181,12 @@ export function parseCrudFilters(builder: CrudRequestWhereBuilder, andFilters: s
   }
 }
 
+/**
+ * Parses the legacy "filter" or "or" parameters
+ *
+ * @param builder The where builder
+ * @param rawFilters The parameter value
+ */
 function parseCrudFilter(builder: CrudRequestWhereBuilder, rawFilters: string[]): void {
   for (const rawFilter of rawFilters) {
     const [name, op, value] = rawFilter.toString().split('||', 3);
