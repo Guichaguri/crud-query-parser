@@ -4,7 +4,7 @@ import { ApiQuery, getMetadataFromContext, parseCrudRequest } from '../../../src
 import { CrudRequestParser } from '../../../src/parsers/crud';
 
 describe('ApiQuery', () => {
-  test('should return original decorator', async () => {
+  test('should return original decorator', () => {
     expect(ApiQuery).toBeTypeOf('function');
     expect(ApiQuery({ name: 'something' })).toBeTypeOf('function');
   });
