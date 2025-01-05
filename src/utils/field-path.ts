@@ -70,7 +70,7 @@ export function pathGetBaseAndName(path: string[]): [string[], string] {
  * @param path The full path
  */
 export function pathGetFieldName(path: string[]): string {
-  return path[path.length - 1];
+  return path.length > 0 ? path[path.length - 1] : '';
 }
 
 /**

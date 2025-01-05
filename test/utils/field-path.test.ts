@@ -49,6 +49,7 @@ test('pathGetBaseAndName throws an error', () => {
 test('pathGetFieldName', () => {
   expect(pathGetFieldName(['field'])).toBe('field');
   expect(pathGetFieldName(['path', 'to', 'field'])).toBe('field');
+  expect(pathGetFieldName([])).toBe('');
 });
 
 test('pathGetValue', () => {

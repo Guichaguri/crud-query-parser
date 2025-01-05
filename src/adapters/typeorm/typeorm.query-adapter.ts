@@ -6,7 +6,7 @@ import { CrudRequestWhere, CrudRequestWhereField, CrudRequestWhereOperator } fro
 import { GetManyResult } from '../../models/get-many-result';
 import { FieldPath } from '../../models/field-path';
 import { ensureArray, ensureEmpty, getOffset, isValid } from '../../utils/functions';
-import { pathEquals, pathGetBaseAndName, pathHasBase } from '../../utils/field-path';
+import { pathEquals, pathGetBaseAndName, pathGetFieldName, pathHasBase } from '../../utils/field-path';
 
 export interface TypeOrmQueryAdapterOptions {
   /**
@@ -67,8 +67,10 @@ export class TypeOrmQueryAdapter implements QueryAdapter<SelectQueryBuilder<any>
    * @inheritDoc
    */
   public build<E extends ObjectLiteral>(qb: SelectQueryBuilder<E>, query: CrudRequest): SelectQueryBuilder<E> {
+    const offset = getOffset(query.offset, query.limit, query.page);
+
     qb = this.createBaseQuery(qb, query);
-    qb = this.paginateQuery(qb, query);
+    qb = this.paginateQuery(qb, query, offset);
 
     return qb;
   }
@@ -76,7 +78,7 @@ export class TypeOrmQueryAdapter implements QueryAdapter<SelectQueryBuilder<any>
   /**
    * @inheritDoc
    */
-  public async getOne<E extends ObjectLiteral>(qb: SelectQueryBuilder<E | any>, request: CrudRequest): Promise<E | null> {
+  public async getOne<E extends ObjectLiteral>(qb: SelectQueryBuilder<E>, request: CrudRequest): Promise<E | null> {
     const query = this.createBaseQuery(qb, request);
     const entity = await query.getOne();
 
@@ -86,7 +88,7 @@ export class TypeOrmQueryAdapter implements QueryAdapter<SelectQueryBuilder<any>
   /**
    * @inheritDoc
    */
-  public async getMany<E extends ObjectLiteral>(qb: SelectQueryBuilder<E | any>, request: CrudRequest): Promise<GetManyResult<E>> {
+  public async getMany<E extends ObjectLiteral>(qb: SelectQueryBuilder<E>, request: CrudRequest): Promise<GetManyResult<E>> {
     const offset = getOffset(request.offset, request.limit, request.page);
 
     const fullQuery = this.createBaseQuery(qb, request);
@@ -98,8 +100,8 @@ export class TypeOrmQueryAdapter implements QueryAdapter<SelectQueryBuilder<any>
     const limit = request.limit ?? total;
 
     const count = data.length;
-    const page = Math.floor(offset / limit) + 1;
-    const pageCount = Math.ceil(total / limit);
+    const page = limit > 0 ? Math.floor(offset / limit) + 1 : 1;
+    const pageCount = limit > 0 ? Math.ceil(total / limit) : 0;
 
     return {
       data,
@@ -272,7 +274,7 @@ export class TypeOrmQueryAdapter implements QueryAdapter<SelectQueryBuilder<any>
    * @param field The field path
    */
   protected createParam(paramsDefined: string[], field: string[]): string {
-    const name = field.length > 0 ? field[field.length - 1] : '';
+    const name = pathGetFieldName(field);
     let param: string;
     let iteration: number = 0;
 
@@ -306,15 +308,13 @@ export class TypeOrmQueryAdapter implements QueryAdapter<SelectQueryBuilder<any>
 
     const rule = this.options.invalidFields?.[source] || defaults[source];
 
-    if (rule === 'ignore')
-      return false;
-
     if (rule === 'allow-unsafe')
       return true;
 
     if (rule === 'deny')
       throw new Error(`${source} field "${path.join('.')}" is invalid.`);
 
+    // rule === 'ignore'
     return false;
   }
 
@@ -451,16 +451,15 @@ export class TypeOrmQueryAdapter implements QueryAdapter<SelectQueryBuilder<any>
       case CrudRequestWhereOperator.IN_LOWER:
         ensureArray('IN operator', value, 1);
 
-        return { where: `LOWER(${field}) IN (...:${param})`, params: { [param]: value } };
+        return { where: `LOWER(${field}) IN (:...${param})`, params: { [param]: value } };
 
       case CrudRequestWhereOperator.NOT_IN_LOWER:
         ensureArray('NOT IN operator', value, 1);
 
-        return { where: `LOWER(${field}) NOT IN (...:${param})`, params: { [param]: value } };
-
-      default:
-        throw new Error(`Unknown operator "${operator}"`);
+        return { where: `LOWER(${field}) NOT IN (:...${param})`, params: { [param]: value } };
     }
+
+    throw new Error(`Unsupported operator "${operator}"`);
   }
 
   /**
