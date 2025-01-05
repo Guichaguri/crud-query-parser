@@ -94,7 +94,7 @@ test('isValid', () => {
 test('getOffset', () => {
   expect(getOffset(10)).toBe(10);
   expect(getOffset(undefined)).toBe(0);
-  expect(getOffset(undefined, 2, 2)).toBe(4);
+  expect(getOffset(undefined, 2, 3)).toBe(4);
 });
 
 test('createInstance', () => {
