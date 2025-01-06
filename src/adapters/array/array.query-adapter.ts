@@ -4,6 +4,7 @@ import { GetManyResult } from '../../models/get-many-result';
 import { CrudRequestWhere, CrudRequestWhereOperator, CrudRequestWhereValueType } from '../../models/crud-request-where';
 import { ensureArray, ensurePrimitive, ensureString, getOffset, isValid } from '../../utils/functions';
 import { pathGetValue, pathSetValue } from '../../utils/field-path';
+import { createGetManyResult } from '../../utils/objects';
 
 export interface ArrayQueryAdapterOptions<T> {
   /**
@@ -52,17 +53,7 @@ export class ArrayQueryAdapter<T extends object> implements QueryAdapter<T[], T>
     data = this.applyLimits(data, offset, limit);
     data = this.applySelect(data, request.select);
 
-    const count = data.length;
-    const page = Math.floor(offset / limit) + 1;
-    const pageCount = Math.ceil(total / limit);
-
-    return {
-      data: data as E[],
-      total,
-      page,
-      count,
-      pageCount,
-    };
+    return createGetManyResult(data as E[], total, offset, limit);
   }
 
   /**

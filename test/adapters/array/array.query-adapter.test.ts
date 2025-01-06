@@ -1,6 +1,7 @@
 import { describe, expect, test } from 'vitest';
 import { ArrayQueryAdapter } from '../../../src/adapters/array';
 import { CrudRequest, CrudRequestWhereOperator } from '../../../src';
+import { createCrudRequest } from '../../../src/utils/objects';
 
 interface Sample { id: number, name: string, category: string, isActive: boolean, meta?: object | null }
 
@@ -14,12 +15,7 @@ const data: Sample[] = [
   { id: 5, name: 'foo', category: 'Fashion', isActive: true, meta: {} },
 ];
 
-const emptyQuery: CrudRequest = {
-  select: [],
-  where: { and: [] },
-  order: [],
-  relations: [],
-};
+const emptyQuery: CrudRequest = createCrudRequest();
 
 describe('build', () => {
   test('should return as is', () => {

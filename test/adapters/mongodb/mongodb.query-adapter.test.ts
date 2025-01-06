@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, test, vi } from 'vitest';
 import { Collection, Condition, Filter, FindCursor } from 'mongodb';
 import { MongoDBQueryAdapter } from '../../../src/adapters/mongodb';
 import { CrudRequest, CrudRequestWhereOperator, GetManyResult } from '../../../src';
+import { createCrudRequest } from '../../../src/utils/objects';
 
 const adapter = new MongoDBQueryAdapter();
 
@@ -24,12 +25,7 @@ const collectionMocks = {
 const cursor = cursorMocks as any as FindCursor;
 const collection = collectionMocks as any as Collection;
 
-const emptyRequest: CrudRequest = {
-  select: [],
-  relations: [],
-  order: [],
-  where: { and: [] },
-};
+const emptyRequest: CrudRequest = createCrudRequest();
 
 const complexRequest: CrudRequest = {
   select: [{ field: ['id'] }, { field: ['title'] }, { field: ['category', 'name'] }],

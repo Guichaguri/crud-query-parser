@@ -16,6 +16,7 @@ import { GetManyResult } from '../../models/get-many-result';
 import { FieldPath } from '../../models/field-path';
 import { pathEquals, pathParse } from '../../utils/field-path';
 import { ensureArray, ensureEmpty } from '../../utils/functions';
+import { createGetManyResult } from '../../utils/objects';
 
 export interface DynamoDBQueryAdapterOptions {
   /**
@@ -115,17 +116,9 @@ export class DynamoDBQueryAdapter implements QueryAdapter<DynamoDBQuery> {
 
     const [data, total] = await this.fetchDataAndCount<E>(input, true);
 
-    const count = data.length;
     const limit = request.limit || baseQuery.Limit;
-    const pageCount = limit && total ? Math.ceil(total / limit) : 0;
 
-    return {
-      data,
-      count,
-      pageCount,
-      total: total || 0,
-      page: 1,
-    };
+    return createGetManyResult(data, total || 0, 0, limit);
   }
 
   /**

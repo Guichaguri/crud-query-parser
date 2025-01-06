@@ -3,6 +3,7 @@ import type { Filter } from 'mongodb';
 import { QueryWithHelpers } from 'mongoose';
 import { MongooseQueryAdapter } from '../../../src/adapters/mongodb';
 import { CrudRequest, CrudRequestWhereOperator, GetManyResult } from '../../../src';
+import { createCrudRequest } from '../../../src/utils/objects';
 
 const adapter = new MongooseQueryAdapter();
 
@@ -19,12 +20,7 @@ const queryMocks = {
 
 const query = queryMocks as any as QueryWithHelpers<any, any>;
 
-const emptyRequest: CrudRequest = {
-  select: [],
-  relations: [],
-  order: [],
-  where: { and: [] },
-};
+const emptyRequest: CrudRequest = createCrudRequest();
 
 const complexRequest: CrudRequest = {
   select: [{ field: ['id'] }, { field: ['title'] }, { field: ['category', 'name'] }],

@@ -3,6 +3,7 @@ import { DynamoDBQueryAdapter } from '../../../src/adapters/dynamodb';
 import { CrudRequest, CrudRequestWhereOperator, GetManyResult } from '../../../src';
 import { DynamoDBClient, GetItemCommand, QueryCommand, ScanCommand } from '@aws-sdk/client-dynamodb';
 import { marshall } from '@aws-sdk/util-dynamodb';
+import { createCrudRequest } from '../../../src/utils/objects';
 
 let mockedResults: any[] | undefined = undefined;
 
@@ -26,12 +27,7 @@ const adapter = new DynamoDBQueryAdapter({
   sortKey: 'id',
 });
 
-const emptyRequest: CrudRequest = {
-  select: [],
-  relations: [],
-  order: [],
-  where: { and: [] },
-};
+const emptyRequest: CrudRequest = createCrudRequest();
 
 const complexRequest: CrudRequest = {
   select: [{ field: ['id'] }, { field: ['title'] }, { field: ['category', 'name'] }],
@@ -243,7 +239,7 @@ describe('getMany', () => {
       data: [{ foo: 'bar' }, { foo: 'baz' }],
       count: 2,
       page: 1,
-      pageCount: 0,
+      pageCount: 1,
       total: 2,
     } satisfies GetManyResult<unknown>);
     expect(sendCommandMock).toHaveBeenCalledTimes(2);
@@ -299,7 +295,7 @@ describe('getMany', () => {
       data: [{ foo: 'bar' }],
       count: 1,
       page: 1,
-      pageCount: 0,
+      pageCount: 1,
       total: 1,
     } satisfies GetManyResult<unknown>);
     expect(sendCommandMock).toHaveBeenCalledTimes(1);

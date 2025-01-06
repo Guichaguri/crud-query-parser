@@ -3,6 +3,7 @@ import { QueryAdapter } from '../../models/query-adapter';
 import { CrudRequest } from '../../models/crud-request';
 import { GetManyResult } from '../../models/get-many-result';
 import { BaseMongoQueryAdapter } from './base-mongo.query-adapter';
+import { createGetManyResult } from '../../utils/objects';
 
 export interface MongooseQueryAdapterOptions {
   /**
@@ -53,18 +54,7 @@ export class MongooseQueryAdapter extends BaseMongoQueryAdapter implements Query
     const total = await this.getCount(countQuery);
     const data = await query.exec();
 
-    const actualLimit = limit || data.length;
-    const count = data.length;
-    const page = actualLimit ? Math.floor(skip / actualLimit) + 1 : 1;
-    const pageCount = actualLimit ? Math.ceil(total / actualLimit) : 0;
-
-    return {
-      data,
-      count,
-      total,
-      page,
-      pageCount,
-    };
+    return createGetManyResult(data, total, skip, limit);
   }
 
   /**

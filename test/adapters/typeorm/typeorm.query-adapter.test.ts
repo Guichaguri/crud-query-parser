@@ -2,6 +2,7 @@ import { Brackets, Column, DataSource, Entity, ManyToOne, OneToMany, PrimaryColu
 import { beforeAll, describe, expect, test } from 'vitest';
 import { TypeOrmQueryAdapter } from '../../../src/adapters/typeorm';
 import { CrudRequest, CrudRequestWhereOperator } from '../../../src';
+import { createCrudRequest } from '../../../src/utils/objects';
 
 @Entity('posts')
 class PostEntity {
@@ -74,12 +75,7 @@ beforeAll(async () => {
   ]);
 });
 
-const emptyRequest: CrudRequest = {
-  select: [],
-  relations: [],
-  order: [],
-  where: { and: [] },
-};
+const emptyRequest: CrudRequest = createCrudRequest();
 
 const complexRequest: CrudRequest = {
   select: [{ field: ['id'] }, { field: ['title'] }, { field: ['category', 'name'] }],

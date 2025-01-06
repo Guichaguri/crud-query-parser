@@ -7,6 +7,7 @@ import { GetManyResult } from '../../models/get-many-result';
 import { FieldPath } from '../../models/field-path';
 import { ensureArray, ensureEmpty, getOffset, isValid } from '../../utils/functions';
 import { pathEquals, pathGetBaseAndName, pathGetFieldName, pathHasBase } from '../../utils/field-path';
+import { createGetManyResult } from '../../utils/objects';
 
 export interface TypeOrmQueryAdapterOptions {
   /**
@@ -97,19 +98,7 @@ export class TypeOrmQueryAdapter implements QueryAdapter<SelectQueryBuilder<any>
     const data = await paginatedQuery.getMany();
     const total = await fullQuery.getCount();
 
-    const limit = request.limit ?? total;
-
-    const count = data.length;
-    const page = limit > 0 ? Math.floor(offset / limit) + 1 : 1;
-    const pageCount = limit > 0 ? Math.ceil(total / limit) : 0;
-
-    return {
-      data,
-      count,
-      page,
-      pageCount,
-      total,
-    };
+    return createGetManyResult(data, total, offset, request.limit);
   }
 
   /**
