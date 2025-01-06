@@ -2,7 +2,11 @@ import { describe, expect, test } from 'vitest';
 import { ArrayQueryAdapter } from '../../../src/adapters/array';
 import { CrudRequest, CrudRequestWhereOperator } from '../../../src';
 
-const data = [
+interface Sample { id: number, name: string, category: string, isActive: boolean, meta?: object | null }
+
+const adapter = new ArrayQueryAdapter<Sample>();
+
+const data: Sample[] = [
   { id: 1, name: 'Foo', category: 'Finance', isActive: true, meta: {} },
   { id: 2, name: 'Bar', category: 'Finance', isActive: true, meta: null },
   { id: 3, name: 'Hello', category: 'Sports', isActive: false, meta: {} },
@@ -19,7 +23,6 @@ const emptyQuery: CrudRequest = {
 
 describe('build', () => {
   test('should return as is', () => {
-    const adapter = new ArrayQueryAdapter();
     const result = adapter.build(data, emptyQuery);
 
     expect(result).toEqual(data);
@@ -28,7 +31,6 @@ describe('build', () => {
 
 describe('applyLimits', () => {
   test('should limit and offset', () => {
-    const adapter = new ArrayQueryAdapter();
     const result = adapter.build(data, {
       ...emptyQuery,
       offset: 1,
@@ -41,7 +43,6 @@ describe('applyLimits', () => {
   });
 
   test('should only limit', () => {
-    const adapter = new ArrayQueryAdapter();
     const result = adapter.build(data, {
       ...emptyQuery,
       limit: 2,
@@ -55,7 +56,6 @@ describe('applyLimits', () => {
 
 describe('applyOrder', () => {
   test('should sort numbers', () => {
-    const adapter = new ArrayQueryAdapter<{ id: number }>();
     const result = adapter.build(data, {
       ...emptyQuery,
       order: [{ field: ['id'], order: 'DESC' }],
@@ -67,7 +67,6 @@ describe('applyOrder', () => {
   });
 
   test('should sort strings', () => {
-    const adapter = new ArrayQueryAdapter<{ name: string }>();
     const result = adapter.build(data, {
       ...emptyQuery,
       order: [{ field: ['name'], order: 'ASC' }],
@@ -79,7 +78,6 @@ describe('applyOrder', () => {
   });
 
   test('should sort booleans', () => {
-    const adapter = new ArrayQueryAdapter<{ isActive: boolean }>();
     const result = adapter.build(data, {
       ...emptyQuery,
       order: [{ field: ['isActive'], order: 'ASC' }],
@@ -91,7 +89,6 @@ describe('applyOrder', () => {
   });
 
   test('should not sort objects', () => {
-    const adapter = new ArrayQueryAdapter<{ isActive: boolean }>();
     const result = adapter.build(data, {
       ...emptyQuery,
       order: [{ field: ['meta'], order: 'ASC' }],
@@ -103,7 +100,6 @@ describe('applyOrder', () => {
 
 describe('applySelect', () => {
   test('should select fields', () => {
-    const adapter = new ArrayQueryAdapter<{ name: string }>();
     const result = adapter.build(data, {
       ...emptyQuery,
       select: [{ field: ['name'] }],
@@ -139,7 +135,6 @@ describe('applySelect', () => {
 
 describe('applyWhere', () => {
   test('should filter with AND operator', () => {
-    const adapter = new ArrayQueryAdapter<{ category: string, isActive: boolean }>();
     const result = adapter.build(data, {
       ...emptyQuery,
       where: {
@@ -159,7 +154,6 @@ describe('applyWhere', () => {
   });
 
   test('should filter with OR operator', () => {
-    const adapter = new ArrayQueryAdapter<{ category: string, isActive: boolean }>();
     const result = adapter.build(data, {
       ...emptyQuery,
       where: {
@@ -178,8 +172,6 @@ describe('applyWhere', () => {
   });
 
   test('should ignore invalid filter', () => {
-    const adapter = new ArrayQueryAdapter();
-
     const result = adapter.build(data, {
       ...emptyQuery,
       where: {} as any,
@@ -189,7 +181,6 @@ describe('applyWhere', () => {
   });
 
   test('should validate all numeric operators', () => {
-    const adapter = new ArrayQueryAdapter();
     const ops: [CrudRequestWhereOperator, number][] = [
       [CrudRequestWhereOperator.EQ, 1],
       [CrudRequestWhereOperator.NEQ, 4],
@@ -212,7 +203,6 @@ describe('applyWhere', () => {
   });
 
   test('should validate all string operators', () => {
-    const adapter = new ArrayQueryAdapter();
     const ops: [CrudRequestWhereOperator, number][] = [
       [CrudRequestWhereOperator.EQ, 1],
       [CrudRequestWhereOperator.NEQ, 4],
@@ -245,7 +235,6 @@ describe('applyWhere', () => {
   });
 
   test('should ignore string operators on numbers', () => {
-    const adapter = new ArrayQueryAdapter();
     const ops: [CrudRequestWhereOperator, number][] = [
       [CrudRequestWhereOperator.CONTAINS, 0],
       [CrudRequestWhereOperator.NOT_CONTAINS, 5],
@@ -272,7 +261,6 @@ describe('applyWhere', () => {
   });
 
   test('should validate IN operators', () => {
-    const adapter = new ArrayQueryAdapter();
     const ops: [CrudRequestWhereOperator, number][] = [
       [CrudRequestWhereOperator.IN, 2],
       [CrudRequestWhereOperator.NOT_IN, 3],
@@ -293,8 +281,6 @@ describe('applyWhere', () => {
   });
 
   test('should validate special operators', () => {
-    const adapter = new ArrayQueryAdapter();
-
     expect(adapter.build(data, {
       ...emptyQuery,
       where: {
@@ -329,8 +315,6 @@ describe('applyWhere', () => {
 
 describe('getMany', () => {
   test('should get all from empty query', async () => {
-    const adapter = new ArrayQueryAdapter();
-
     const result = await adapter.getMany(data, emptyQuery);
 
     expect(result).toEqual({
@@ -345,8 +329,6 @@ describe('getMany', () => {
 
 describe('getOne', () => {
   test('should return first from empty query', async () => {
-    const adapter = new ArrayQueryAdapter();
-
     const result = await adapter.getOne(data, emptyQuery);
 
     expect(result).not.toBeNull();
@@ -354,8 +336,6 @@ describe('getOne', () => {
   });
 
   test('should return null from empty result set', async () => {
-    const adapter = new ArrayQueryAdapter();
-
     const result = await adapter.getOne(data, {
       ...emptyQuery,
       where: {
