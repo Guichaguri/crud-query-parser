@@ -9,4 +9,5 @@ export * from './models/crud-request-where';
 
 // Utilities
 export * from './utils/crud-request-where.builder';
+export { createCrudRequest } from './utils/objects';
 
