@@ -35,7 +35,7 @@ export abstract class BaseMongoQueryAdapter {
    * @param crudRequest The crud request
    */
   public buildSkip(crudRequest: CrudRequest): number {
-    return getOffset(crudRequest.offset, crudRequest.page, crudRequest.limit);
+    return getOffset(crudRequest.offset, crudRequest.limit, crudRequest.page);
   }
 
   /**
@@ -53,11 +53,11 @@ export abstract class BaseMongoQueryAdapter {
    * @param where The where condition
    */
   protected mapFilter<E>(where: CrudRequestWhere): Filter<E> {
-    if (where.and) {
+    if (where.and && where.and.length > 0) {
       return { $and: where.and.map(item => this.mapFilter(item)) };
     }
 
-    if (where.or) {
+    if (where.or && where.or.length > 0) {
       return { $or: where.or.map(item => this.mapFilter(item)) };
     }
 
@@ -133,10 +133,10 @@ export abstract class BaseMongoQueryAdapter {
         return { $not: { $regex: '^' + escapeRegex(ensureString('NEQ LOWER operator', value)) + '$', $options: 'i' } };
 
       case CrudRequestWhereOperator.CONTAINS_LOWER:
-        return { $regex: '^' + escapeRegex(ensureString('CONTAINS LOWER operator', value)), $options: 'i' };
+        return { $regex: escapeRegex(ensureString('CONTAINS LOWER operator', value)), $options: 'i' };
 
       case CrudRequestWhereOperator.NOT_CONTAINS_LOWER:
-        return { $not: { $regex: escapeRegex(ensureString('NOT CONTAINS LOWER operator', value)) + '$', $options: 'i' } };
+        return { $not: { $regex: escapeRegex(ensureString('NOT CONTAINS LOWER operator', value)), $options: 'i' } };
 
       case CrudRequestWhereOperator.STARTS_LOWER:
         return { $regex: '^' + escapeRegex(ensureString('STARTS LOWER operator', value)), $options: 'i' };
@@ -157,10 +157,9 @@ export abstract class BaseMongoQueryAdapter {
             { $regex: '^' + escapeRegex(ensureString(`NOT IN LOWER [${i}] operator`, item)) + '$', $options: 'i' }
           )),
         };
-
-      default:
-        throw new Error(`Unsupported operator ${operator}.`);
     }
+
+    throw new Error(`Unsupported operator ${operator}.`);
   }
 
 }

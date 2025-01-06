@@ -52,8 +52,8 @@ export class MongoDBQueryAdapter extends BaseMongoQueryAdapter implements QueryA
 
     const actualLimit = limit || data.length;
     const count = data.length;
-    const page = Math.floor(skip / actualLimit) + 1;
-    const pageCount = Math.ceil(total / actualLimit);
+    const page = actualLimit ? Math.floor(skip / actualLimit) + 1 : 1;
+    const pageCount = actualLimit ? Math.ceil(total / actualLimit) : 0;
 
     return {
       data,
@@ -89,10 +89,10 @@ export class MongoDBQueryAdapter extends BaseMongoQueryAdapter implements QueryA
     if (this.options.disableCount)
       return 0;
 
-    if ('countDocuments' in base)
+    if ('countDocuments' in base && typeof base.countDocuments === 'function')
       return await base.countDocuments(filter);
 
-    if ('count' in cursor)
+    if ('count' in base && typeof cursor.count === 'function')
       return await cursor.count();
 
     return 0;
