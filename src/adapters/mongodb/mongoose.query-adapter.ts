@@ -55,8 +55,8 @@ export class MongooseQueryAdapter extends BaseMongoQueryAdapter implements Query
 
     const actualLimit = limit || data.length;
     const count = data.length;
-    const page = Math.floor(skip / actualLimit) + 1;
-    const pageCount = Math.ceil(total / actualLimit);
+    const page = actualLimit ? Math.floor(skip / actualLimit) + 1 : 1;
+    const pageCount = actualLimit ? Math.ceil(total / actualLimit) : 0;
 
     return {
       data,
