@@ -196,11 +196,12 @@ export class DynamoDBQueryAdapter implements QueryAdapter<DynamoDBQuery> {
     const query: GetItemInput = {
       ...baseQuery,
       TableName: baseQuery.TableName || this.options.tableName,
-      Key: {},
+      Key: baseQuery.Key,
     };
     const ctx: DynamoDBQueryContext = { allowKeySplitting: true };
 
     this.adaptProjection(query, request.select);
+    this.adaptFilter({}, ctx, request.where);
 
     if (ctx.key)
       this.adaptGetItemKey(query, ctx.key);
@@ -410,7 +411,7 @@ export class DynamoDBQueryAdapter implements QueryAdapter<DynamoDBQuery> {
    * @param keys The key conditions
    */
   protected adaptGetItemKey(query: Partial<GetItemInput>, keys: CrudRequestWhereField[]): void {
-    const key: Record<string, unknown> = {};
+    const key: Record<string, unknown> = query.Key ? this.unmarshall(query.Key) : {};
 
     for (const where of keys) {
       if (where.operator !== CrudRequestWhereOperator.EQ)
@@ -566,7 +567,7 @@ export class DynamoDBQueryAdapter implements QueryAdapter<DynamoDBQuery> {
     where: CrudRequestWhereField,
   ): { where: string, params: Record<string, any> } {
     const field = this.registerAttribute(query, where.field);
-    const param = field.replace('#', ':');
+    const param = this.createUniqueParam(query, field.replace('#', ':'));
 
     let value = where.value;
 
@@ -596,7 +597,7 @@ export class DynamoDBQueryAdapter implements QueryAdapter<DynamoDBQuery> {
         return { where: `contains(${field}, ${param})`, params: { [param]: value } };
 
       case CrudRequestWhereOperator.NOT_CONTAINS:
-        return { where: `NOT contains(${field}, :${param})`, params: { [param]: value } };
+        return { where: `NOT contains(${field}, ${param})`, params: { [param]: value } };
 
       case CrudRequestWhereOperator.BETWEEN:
         const arr = ensureArray('BETWEEN operator', value, 2);
@@ -611,7 +612,8 @@ export class DynamoDBQueryAdapter implements QueryAdapter<DynamoDBQuery> {
 
         return {
           where: `${field} IN (${value.map((_, i) => param + '_' + i).join(', ')})`,
-          params: value.reduce((val, i) => ({
+          params: value.reduce((prev, val, i) => ({
+            ...prev,
             [param + '_' + i]: val,
           }), {}),
         };
@@ -621,7 +623,8 @@ export class DynamoDBQueryAdapter implements QueryAdapter<DynamoDBQuery> {
 
         return {
           where: `NOT (${field} IN (${value.map((_, i) => param + '_' + i).join(', ')}))`,
-          params: value.reduce((val, i) => ({
+          params: value.reduce((prev, val, i) => ({
+            ...prev,
             [param + '_' + i]: val,
           }), {}),
         };
@@ -635,10 +638,9 @@ export class DynamoDBQueryAdapter implements QueryAdapter<DynamoDBQuery> {
         ensureEmpty('NOT NULL operator', value);
 
         return { where: `(attribute_exists(${field}) AND ${field} <> :null)`, params: { ':null': null } };
-
-      default:
-        throw new Error(`Operator not supported in DynamoDB "${where.operator}"`);
     }
+
+    throw new Error(`Operator not supported in DynamoDB "${where.operator}"`);
   }
 
   /**
@@ -652,14 +654,14 @@ export class DynamoDBQueryAdapter implements QueryAdapter<DynamoDBQuery> {
     const baseName = '#' + fieldName.replace(/[^A-Za-z0-9_]/g, '_');
 
     let attributeName = baseName;
-    let i = 1;
+    let interaction = 1;
 
     const names = query.ExpressionAttributeNames || {};
 
     // This avoids attribute name conflicts
     while (names[attributeName] && names[attributeName] !== fieldName) {
-      attributeName = baseName + i.toString();
-      i++;
+      attributeName = baseName + interaction.toString();
+      interaction++;
     }
 
     names[attributeName] = fieldName;
@@ -668,6 +670,29 @@ export class DynamoDBQueryAdapter implements QueryAdapter<DynamoDBQuery> {
     return attributeName;
   }
 
+  /**
+   * Creates a unique query parameter name based on a field
+   *
+   * @param query The DynamoDB query
+   * @param name The parameter name, which should start with ":"
+   */
+  protected createUniqueParam(query: DynamoDBQuery, name: string): string {
+    let param = name;
+    let iteration: number = 1;
+
+    while (query.ExpressionAttributeValues?.[param]) {
+      param = name + iteration.toString();
+      iteration++;
+    }
+
+    return param;
+  }
+
+  /**
+   * Wraps an expression with parenthesis
+   *
+   * @param expression The filter expression
+   */
   protected wrapParenthesis(expression: string): string {
     if (!expression)
       return '';
