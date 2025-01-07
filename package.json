@@ -1,6 +1,6 @@
 {
   "name": "crud-query-parser",
-  "version": "0.1.0",
+  "version": "1.0.0",
   "description": "Parses HTTP requests and converts them into database queries",
   "keywords": [
     "crud",
