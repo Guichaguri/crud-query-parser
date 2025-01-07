@@ -57,7 +57,6 @@ function filterPropertyAccessWhere(
   }
 
   if (where.field) {
-    // We'll return an empty AND where if the field is not allowed
     if (!allowedProperties.includes(where.field.join('.')))
       return undefined;
   }

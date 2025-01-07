@@ -3,7 +3,9 @@ import { OpenAPIParameter } from '../../models/openapi-parameter';
 import { RequestParser } from '../../models/request-parser';
 import { CrudRequest } from '../../models/crud-request';
 import { createInstance } from '../../utils/functions';
-import { CRUD_QUERY_PARSER } from './decorators';
+import { createCrudRequest } from '../../utils/objects';
+
+export const CRUD_QUERY_PARSER = 'crud-query-parser';
 
 export const ApiQuery = (() => {
   try {
@@ -38,12 +40,7 @@ export function parseCrudRequest(data: RequestParser | Type<RequestParser> | und
   if (!parser) {
     new Logger('ParseCrudRequest').warn(`No crud request parser found. Please, define one with @Crud() or pass to @ParseCrudRequest()`);
 
-    return {
-      where: { and: [] },
-      select: [],
-      order: [],
-      relations: [],
-    };
+    return createCrudRequest();
   }
 
   return parser.parse(request.query);
