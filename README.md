@@ -6,20 +6,15 @@ This library parses query parameters from HTTP requests and converts them to dat
 
 ## Features
 
-- Modular architecture, framework-agnostic
-- Supports the `@nestjsx/crud` query parameter syntax
+- Modular architecture, can be extended as needed
 - Flexible request manipulation and filtering
+- Supports the `@nestjsx/crud` query parameter syntax
 - [TypeORM support](./docs/adapters/typeorm.md)
 - [MongoDB and Mongoose support](./docs/adapters/mongodb.md)
 - [DynamoDB support](./docs/adapters/dynamodb.md)
 - [JS arrays support](./docs/adapters/array.md)
-- [NestJS support](./docs/frameworks/nestjs.md)
-- [NextJS support](./docs/frameworks/nextjs.md)
-- [Express support](./docs/frameworks/express.md)
-- [Fastify support](./docs/frameworks/fastify.md)
-- [h3 support](./docs/frameworks/h3.md)
-- [tinyhttp support](./docs/frameworks/tinyhttp.md)
-- [http package support](./docs/frameworks/nodejs-http.md)
+- Framework-agnostic
+  - Supports [NestJS](./docs/frameworks/nestjs.md), [NextJS](./docs/frameworks/nextjs.md), [Express](./docs/frameworks/express.md), [Fastify](./docs/frameworks/fastify.md), [h3](./docs/frameworks/h3.md), [tinyhttp](./docs/frameworks/tinyhttp.md), [http package](./docs/frameworks/nodejs-http.md) and many more
 
 ## Install
 
@@ -159,7 +154,7 @@ Read more about the [array adapter](./docs/adapters/array.md).
 ## Frameworks
 
 crud-query-parser is framework-agnostic. You can pass any query parameters object to the parser and it should work out-of-the-box.
-However, we have a few helpers or examples for the frameworks listed below:
+We have a few examples for the frameworks listed below:
 
 - [NestJS](./docs/frameworks/nestjs.md)
 - [NextJS](./docs/frameworks/nextjs.md)
@@ -169,9 +164,11 @@ However, we have a few helpers or examples for the frameworks listed below:
 - [tinyhttp](./docs/frameworks/tinyhttp.md)
 - [Node.js http](./docs/frameworks/nodejs-http.md)
 
-### NestJS helper
+We also have special integrations to improve DX: 
 
-The NestJS helper has OpenAPI support and decorators that automatically parses the request.
+### NestJS Integration
+
+The NestJS Integration has decorators that automatically parses the request. It also has built-in OpenAPI support.
 
 ```ts
 import { Crud, ParseCrudRequest } from 'crud-query-parser/helpers/nestjs';
@@ -189,28 +186,30 @@ export class UserController {
 }
 ```
 
-Read more about the [NestJS helper](docs/frameworks/nestjs.md).
+Read more about the [NestJS Integration](docs/frameworks/nestjs.md).
 
-### Express helper
+### Express Integration
 
-The Express helper has a middleware that automatically parses and memoizes the request.
+The Express Integration has a middleware that automatically parses and memoizes the request.
 
 ```ts
 import { crud } from 'crud-query-parser/helpers/express';
 import { CrudRequestParser } from 'crud-query-parser/parsers/crud';
 
-app.get('/users', crud(CrudRequestParser), (req, res) => {
-  const crudRequest = req.getCrudRequest();
+app.use(crud(CrudRequestParser)); // <- You specify which parser to use
+
+app.get('/users', (req, res) => {
+  const crudRequest = req.getCrudRequest(); // <- The request will be automatically parsed and memoized
 
   // ...
 });
 ```
 
-Read more about the [Express helper](docs/frameworks/express.md).
+Read more about the [Express Integration](docs/frameworks/express.md).
 
 ## Filters
 
-You may need to filter what the user can or cannot query. You can modify the `CrudRequest` object as needed.
+You may need to filter what the user can or cannot query. You are free to modify the `CrudRequest` object however you like.
 
 There are a few filters provided by the library, which are listed below.
 
@@ -238,7 +237,7 @@ crudRequest = ensureEqCondition(crudRequest, {
 ### Ensure page limit
 
 This filter will ensure that the requested limit does not go above the maximum.
-It also sets the default limit whenever the limit is omitted. 
+It also sets a default value whenever the limit is omitted. 
 
 ```ts
 import { ensureLimit } from 'crud-query-parser/filters';
