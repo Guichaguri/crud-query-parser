@@ -10,6 +10,7 @@ This library parses query parameters from HTTP requests and converts them to dat
 - Flexible request manipulation and filtering
 - Supports the `@nestjsx/crud` query parameter syntax
 - [TypeORM support](./docs/adapters/typeorm.md)
+- [Sequelize support](./docs/adapters/sequelize.md)
 - [MongoDB and Mongoose support](./docs/adapters/mongodb.md)
 - [DynamoDB support](./docs/adapters/dynamodb.md)
 - [JS arrays support](./docs/adapters/array.md)
@@ -89,6 +90,21 @@ const adapter = new TypeOrmQueryAdapter();
 ```
 
 Read more about the [TypeORM adapter](./docs/adapters/typeorm.md).
+
+### Sequelize
+
+This adapter works with Sequelize 6
+
+```ts
+import { SequelizeQueryAdapter } from 'crud-query-parser/adapters/sequelize';
+
+const adapter = new SequelizeQueryAdapter();
+
+// Then, you can pass a FindOptions to it:
+// const result = await adapter.getMany({}, crudRequest);
+```
+
+Read more about the [Sequelize adapter](./docs/adapters/sequelize.md).
 
 ### DynamoDB
 

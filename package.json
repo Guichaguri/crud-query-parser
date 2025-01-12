@@ -11,6 +11,7 @@
     "mongodb",
     "mongoose",
     "dynamodb",
+    "sequelize",
     "typeorm",
     "nestjs",
     "express"
@@ -30,6 +31,7 @@
     "sample:dynamodb": "ts-node ./samples/dynamodb/index.ts",
     "sample:mongodb": "ts-node ./samples/mongodb/index.ts",
     "sample:mongoose": "ts-node ./samples/mongoose/index.ts",
+    "sample:sequelize": "ts-node ./samples/sequelize/index.ts",
     "sample:typeorm": "ts-node ./samples/typeorm/index.ts"
   },
   "tsup": {
@@ -38,6 +40,7 @@
       "src/adapters/array/index.ts",
       "src/adapters/dynamodb/index.ts",
       "src/adapters/mongodb/index.ts",
+      "src/adapters/sequelize/index.ts",
       "src/adapters/typeorm/index.ts",
       "src/parsers/crud/index.ts",
       "src/helpers/express/index.ts",
@@ -106,6 +109,16 @@
         "types": "./dist/adapters/mongodb/index.d.ts"
       }
     },
+    "./adapters/sequelize": {
+      "import": {
+        "default": "./dist/adapters/sequelize/index.mjs",
+        "types": "./dist/adapters/sequelize/index.d.mts"
+      },
+      "require": {
+        "default": "./dist/adapters/sequelize/index.js",
+        "types": "./dist/adapters/sequelize/index.d.ts"
+      }
+    },
     "./adapters/typeorm": {
       "import": {
         "default": "./dist/adapters/typeorm/index.mjs",
@@ -164,6 +177,7 @@
     "@nestjs/swagger": ">=7.0.0",
     "mongodb": ">=5.0.0",
     "mongoose": ">=8.0.0",
+    "sequelize": "6.x.x",
     "typeorm": "0.2.x || 0.3.x"
   },
   "peerDependenciesMeta": {
@@ -185,6 +199,9 @@
     "mongoose": {
       "optional": true
     },
+    "sequelize": {
+      "optional": true
+    },
     "typeorm": {
       "optional": true
     }
@@ -202,6 +219,8 @@
     "mongodb": "^5.9.2",
     "mongoose": "^8.8.4",
     "reflect-metadata": "^0.2.2",
+    "sequelize": "^6.37.5",
+    "sqlite3": "^5.1.7",
     "ts-node": "^10.9.2",
     "tsup": "^8.1.0",
     "typeorm": "^0.3.20",
