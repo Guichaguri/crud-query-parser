@@ -223,8 +223,8 @@ export class DynamoDBQueryAdapter implements QueryAdapter<DynamoDBQuery> {
     const mapResult = (type: 'get' | 'query' | 'scan'): GetOrQueryOrScanInput => {
       const count = {
         ...input,
-        ExpressionAttributeNames: { ...input.ExpressionAttributeNames },
-        ExpressionAttributeValues: { ...input.ExpressionAttributeValues },
+        ExpressionAttributeNames: input.ExpressionAttributeNames ? { ...input.ExpressionAttributeNames } : undefined,
+        ExpressionAttributeValues: input.ExpressionAttributeValues ? { ...input.ExpressionAttributeValues } : undefined,
         Select: 'COUNT',
       };
 
