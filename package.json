@@ -1,6 +1,6 @@
 {
   "name": "crud-query-parser",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "Parses HTTP requests and converts them into database queries",
   "keywords": [
     "crud",
@@ -217,7 +217,7 @@
     "@vitest/coverage-v8": "^2.1.8",
     "better-sqlite3": "^9.6.0",
     "mongodb": "^5.9.2",
-    "mongoose": "^8.8.4",
+    "mongoose": "^8.9.5",
     "reflect-metadata": "^0.2.2",
     "sequelize": "^6.37.5",
     "sqlite3": "^5.1.7",
