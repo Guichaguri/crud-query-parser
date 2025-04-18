@@ -1,6 +1,6 @@
 # crud-query-parser
 
-[![NPM](https://img.shields.io/npm/v/crud-query-parser)](https://www.npmjs.com/package/crud-query-parser) [![codecov](https://codecov.io/github/Guichaguri/crud-query-parser/graph/badge.svg?token=KFJIJ220HD)](https://codecov.io/github/Guichaguri/crud-query-parser)
+[![NPM](https://img.shields.io/npm/v/crud-query-parser)](https://www.npmjs.com/package/crud-query-parser) [![Coverage](https://img.shields.io/codecov/c/github/Guichaguri/crud-query-parser?token=KFJIJ220HD)](https://codecov.io/github/Guichaguri/crud-query-parser)
 
 This library parses query parameters from HTTP requests and converts them to database queries, allowing advanced filtering, column selection, pagination and relation joining.
 
