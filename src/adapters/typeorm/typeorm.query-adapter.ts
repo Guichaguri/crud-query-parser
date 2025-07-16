@@ -172,18 +172,21 @@ export class TypeOrmQueryAdapter implements QueryAdapter<SelectQueryBuilder<any>
     select: ParsedRequestSelect,
   ): void {
     for (const relation of relations) {
-      const path = [baseAlias.name, ...relation.field].join('.');
-      const alias = relation.alias || [baseAlias.name, ...relation.field].join('_');
+      const [base, field] = pathGetBaseAndName(relation.field);
+      const alias = qb.expressionMap.findAliasByName([baseAlias.name, ...base].join('_'));
+
+      const path = alias.name + '.' + field;
+      const aliasName = relation.alias || (alias.name + '_' + field);
 
       const fields = select
         .filter(f => pathHasBase(f.field, relation.field))
         .filter(f => this.validateField(baseAlias, f.field, 'select'));
 
       if (fields.length === 0) {
-        qb.leftJoinAndSelect(path, alias);
+        qb.leftJoinAndSelect(path, aliasName);
       } else {
-        qb.leftJoin(path, alias);
-        qb.addSelect(fields.map(f => [alias, f.field[f.field.length - 1]].join('.')));
+        qb.leftJoin(path, aliasName);
+        qb.addSelect(fields.map(f => [aliasName, f.field[f.field.length - 1]].join('.')));
       }
     }
   }

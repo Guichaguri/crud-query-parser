@@ -1,7 +1,8 @@
-import { Column, Entity, OneToMany, PrimaryColumn } from 'typeorm';
+import { Column, Entity, ManyToOne, OneToMany, PrimaryColumn } from 'typeorm';
 import { PostEntity } from './post.entity';
+import { UserEntity } from './user.entity';
 
-@Entity('category')
+@Entity('categories')
 export class CategoryEntity {
 
   @PrimaryColumn()
@@ -10,8 +11,14 @@ export class CategoryEntity {
   @Column({ length: 150 })
   public name!: string;
 
+  @Column()
+  public creatorId!: number;
+
   @OneToMany(() => PostEntity, entity => entity.category)
   public posts!: PostEntity[];
+
+  @ManyToOne(() => UserEntity, entity => entity.categories)
+  public creator!: UserEntity;
 
   constructor(entity?: Partial<CategoryEntity>) {
     Object.assign(this, { ...entity });

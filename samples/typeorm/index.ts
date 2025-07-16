@@ -15,9 +15,9 @@ async function run() {
 
   const qs: Record<string, string | string[]> = {};
 
-  qs['s'] = JSON.stringify({ title: { $contL: 'hello', $notnull: true }, isActive: true });
-  qs['fields'] = 'id,title,category.name';
-  qs['join'] = 'category';
+  qs['s'] = JSON.stringify({ title: { $contL: 'hello', $notnull: true }, isActive: true, 'category.creator.id': 1 });
+  qs['fields'] = 'id,title,category.name,category.creator.name';
+  qs['join'] = ['category', 'category.creator'];
   qs['limit'] = '5';
 
   const request = parser.parse(qs);
