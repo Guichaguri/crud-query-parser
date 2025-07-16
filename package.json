@@ -1,6 +1,6 @@
 {
   "name": "crud-query-parser",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "description": "Parses HTTP requests and converts them into database queries",
   "keywords": [
     "crud",
@@ -214,7 +214,7 @@
     "@types/better-sqlite3": "^7.6.11",
     "@types/express": "^5.0.0",
     "@types/node": "^22.10.3",
-    "@vitest/coverage-v8": "^2.1.8",
+    "@vitest/coverage-v8": "^3.2.4",
     "better-sqlite3": "^9.6.0",
     "mongodb": "^5.9.2",
     "mongoose": "^8.9.5",
@@ -225,6 +225,6 @@
     "tsup": "^8.1.0",
     "typeorm": "^0.3.20",
     "typescript": "^5.5.2",
-    "vitest": "^2.1.8"
+    "vitest": "^3.2.4"
   }
 }
