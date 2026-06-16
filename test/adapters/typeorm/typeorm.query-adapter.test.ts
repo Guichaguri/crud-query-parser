@@ -154,8 +154,8 @@ describe('build', () => {
               .orWhere('PostEntity.id <= :req_id_0', { req_id_0: 1 });
           }));
       }))
-      .limit(25)
-      .offset(25)
+      .take(25)
+      .skip(25)
       .getQuery();
 
     expect(qb.getQuery()).toBe(expected);
@@ -212,6 +212,41 @@ describe('getMany', () => {
     expect(result.count).toBe(5);
     expect(result.total).toBe(5);
     expect(result.pageCount).toBe(1);
+  });
+
+  test('should return all categories', async () => {
+    const result = await adapter.getMany(categoryRepository.createQueryBuilder(), emptyRequest);
+
+    expect(result.data).toHaveLength(3);
+    expect(result.page).toBe(1);
+    expect(result.count).toBe(3);
+    expect(result.total).toBe(3);
+    expect(result.pageCount).toBe(1);
+  });
+
+  test('should return paginated categories with post relations correctly', async () => {
+    const result = await adapter.getMany(categoryRepository.createQueryBuilder(), {
+      relations: [{ field: ['posts'] }],
+      order: [{ field: ['id'], order: 'DESC' }],
+      select: [{ field: ['id'] }, { field: ['name'] }],
+      where: {
+        and: [
+          {
+            field: ['name'],
+            operator: CrudRequestWhereOperator.NOT_NULL,
+            value: null,
+          },
+        ],
+      },
+      page: 1,
+      limit: 2,
+    });
+
+    expect(result.data).toHaveLength(2);
+    expect(result.page).toBe(1);
+    expect(result.count).toBe(2);
+    expect(result.total).toBe(3);
+    expect(result.pageCount).toBe(2);
   });
 
   test('should return active sports posts', async () => {
