@@ -8,6 +8,7 @@ import { CrudRequestWhere, CrudRequestWhereField, CrudRequestWhereOperator } fro
 import { ensureArray, ensurePrimitive, ensurePrimitiveOrNull, getOffset, isValid } from '../../utils/functions';
 import { createGetManyResult } from '../../utils/objects';
 import { pathGetFieldName, pathHasBase } from '../../utils/field-path';
+import { FieldRule, validateFieldRule } from '../../utils/rules';
 
 export interface SequelizeQueryAdapterOptions {
   /**
@@ -430,23 +431,14 @@ export class SequelizeQueryAdapter<T extends Model = Model> implements QueryAdap
    * @param source The source where the field validation comes from
    */
   protected handleInvalidField(path: FieldPath, source: 'select' | 'order' | 'where' | 'relations'): boolean {
-    const defaults = {
+    const defaults: Record<string, FieldRule> = {
       select: 'ignore',
       order: 'ignore',
       where: 'deny',
       relations: 'ignore',
     };
 
-    const rule = this.options.invalidFields?.[source] || defaults[source];
-
-    if (rule === 'allow-unsafe')
-      return true;
-
-    if (rule === 'deny')
-      throw new Error(`${source} field "${path.join('.')}" is invalid.`);
-
-    // rule === 'ignore'
-    return false;
+    return validateFieldRule(this.options.invalidFields?.[source] || defaults[source], source, path);
   }
 
   /**
