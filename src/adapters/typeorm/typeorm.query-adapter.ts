@@ -1,5 +1,4 @@
 import { Brackets, ObjectLiteral, SelectQueryBuilder, WhereExpressionBuilder } from 'typeorm';
-import { Alias } from 'typeorm/query-builder/Alias';
 import { QueryAdapter } from '../../models/query-adapter';
 import { CrudRequest, CrudRequestOrder, CrudRequestRelation, ParsedRequestSelect } from '../../models/crud-request';
 import { CrudRequestWhere, CrudRequestWhereField, CrudRequestWhereOperator } from '../../models/crud-request-where';
@@ -8,6 +7,10 @@ import { FieldPath } from '../../models/field-path';
 import { ensureArray, ensureEmpty, getOffset, isValid } from '../../utils/functions';
 import { pathEquals, pathGetBaseAndName, pathGetFieldName, pathHasBase } from '../../utils/field-path';
 import { createGetManyResult } from '../../utils/objects';
+import { FieldRule, validateFieldRule } from '../../utils/rules';
+
+// This type is not exported, so we have to obtain it from the SelectQueryBuilder
+type Alias = NonNullable<SelectQueryBuilder<any>['expressionMap']['mainAlias']>;
 
 export interface TypeOrmQueryAdapterOptions {
   /**
@@ -292,22 +295,13 @@ export class TypeOrmQueryAdapter implements QueryAdapter<SelectQueryBuilder<any>
     if (isValid)
       return true;
 
-    const defaults = {
+    const defaults: Record<string, FieldRule> = {
       select: 'ignore',
       order: 'ignore',
       where: 'deny',
     };
 
-    const rule = this.options.invalidFields?.[source] || defaults[source];
-
-    if (rule === 'allow-unsafe')
-      return true;
-
-    if (rule === 'deny')
-      throw new Error(`${source} field "${path.join('.')}" is invalid.`);
-
-    // rule === 'ignore'
-    return false;
+    return validateFieldRule(this.options.invalidFields?.[source] || defaults[source], source, path);
   }
 
   /**
