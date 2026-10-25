@@ -154,8 +154,8 @@ describe('build', () => {
               .orWhere('PostEntity.id <= :req_id_0', { req_id_0: 1 });
           }));
       }))
-      .limit(25)
-      .offset(25)
+      .take(25)
+      .skip(25)
       .getQuery();
 
     expect(qb.getQuery()).toBe(expected);

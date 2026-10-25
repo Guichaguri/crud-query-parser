@@ -134,7 +134,13 @@ export class TypeOrmQueryAdapter implements QueryAdapter<SelectQueryBuilder<any>
    * @param offset The parsed query offset
    */
   protected paginateQuery<E extends ObjectLiteral>(qb: SelectQueryBuilder<E>, query: CrudRequest, offset?: number): SelectQueryBuilder<E> {
-    return qb.limit(query.limit).offset(offset);
+    if (query.limit)
+      qb.take(query.limit);
+
+    if (offset)
+      qb.skip(offset);
+
+    return qb;
   }
 
   /**
